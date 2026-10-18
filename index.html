@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>Autumn Block Tracker</title></head><body style="margin:0">
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --page:#f3f5f4; --surface:#fcfdfc; --surface-2:#eef1ef;
+  --ink:#0f1412; --ink-2:#4b5550; --muted:#838c87;
+  --grid:#e1e6e3; --axis:#c1c8c4; --ring:rgba(15,20,18,.10);
+  --series:#2a78d6; --series-soft:rgba(42,120,214,.12);
+  --target:#4b5550;
+  --good:#0ca30c; --good-ink:#006300; --warn:#fab219; --warn-ink:#8a5a00; --bad:#d03b3b; --bad-ink:#b02a2a;
+  --sample:#eda100;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0c0f0e; --surface:#161a18; --surface-2:#1e2321;
+    --ink:#f4f7f5; --ink-2:#c0c8c3; --muted:#8a938e;
+    --grid:#262c29; --axis:#39413d; --ring:rgba(255,255,255,.10);
+    --series:#3987e5; --series-soft:rgba(57,135,229,.18);
+    --target:#c0c8c3; --good-ink:#2fc22f; --warn-ink:#fab219; --bad-ink:#ef6a6a; --sample:#c98500;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0c0f0e; --surface:#161a18; --surface-2:#1e2321;
+  --ink:#f4f7f5; --ink-2:#c0c8c3; --muted:#8a938e;
+  --grid:#262c29; --axis:#39413d; --ring:rgba(255,255,255,.10);
+  --series:#3987e5; --series-soft:rgba(57,135,229,.18);
+  --target:#c0c8c3; --good-ink:#2fc22f; --warn-ink:#fab219; --bad-ink:#ef6a6a; --sample:#c98500;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding:0 16px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:clamp(34px,5vw,52px);line-height:1;text-transform:uppercase}
+h2{font-size:24px;text-transform:uppercase;letter-spacing:.03em}
+h3{font-size:18px;font-weight:600}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;gap:20px 40px;align-items:flex-end;justify-content:space-between}
+.head-l{display:flex;flex-direction:column;gap:8px}
+.head-l p{margin:0;color:var(--ink-2);max-width:60ch}
+.rack{display:flex;flex-direction:column;gap:8px;min-width:260px}
+.plates{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.plate{height:28px;border-radius:3px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--ring);position:relative}
+.plate.done{background:var(--series)}
+.plate.now{box-shadow:inset 0 0 0 2px var(--ink)}
+.rack-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-2)}
+.banner{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--sample) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--sample) 55%,transparent);border-radius:8px;padding:12px 16px;font-size:14px}
+.banner strong{font-weight:600}
+button,.btn{font:inherit;font-weight:600;font-size:14px;border-radius:6px;border:1px solid var(--axis);background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+button:hover{background:var(--surface-2)}
+button.primary{background:var(--ink);color:var(--page);border-color:var(--ink)}
+button.primary:hover{opacity:.88}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--series);outline-offset:2px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.kpi{background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring);padding:16px;display:flex;flex-direction:column;gap:4px}
+.kpi .v{font-family:var(--display);font-size:38px;font-weight:700;line-height:1}
+.kpi .s{font-size:13px;color:var(--ink-2)}
+section{display:flex;flex-direction:column;gap:14px}
+#page-overview,#page-cycling,#page-status{display:flex;flex-direction:column;gap:28px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.sec-head span{color:var(--muted);font-size:13px}
+.table-wrap{overflow:auto;max-height:78vh;background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring)}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface);box-shadow:inset 0 -1px 0 var(--grid)}
+th:first-child,td:first-child{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:inset -1px 0 0 var(--grid)}
+thead th:first-child{z-index:3;box-shadow:inset -1px -1px 0 var(--grid)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:14px}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:right;padding:10px 14px;border-bottom:1px solid var(--grid)}
+th:first-child,td:first-child{text-align:left}
+td{padding:9px 14px;border-bottom:1px solid var(--grid);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.metric{font-weight:600;white-space:normal}
+td.metric small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid currentColor}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.ahead{color:var(--good-ink)} .pill.on{color:var(--series)} .pill.behind{color:var(--bad-ink)} .pill.na,.pill.track,.pill.prog{color:var(--muted)} .pill.over{color:var(--warn-ink)}
+.pill.over::before{content:"!";width:auto;height:auto;background:none;font-size:11px;font-weight:700}
+.pill.ahead::before{content:"▲";width:auto;height:auto;background:none;font-size:9px}
+.pill.behind::before{content:"▼";width:auto;height:auto;background:none;font-size:9px}
+.delta.up{color:var(--good-ink)} .delta.down{color:var(--bad-ink)} .delta.flat{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.grid.g3{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.hstat{border-left:3px solid var(--series);padding:4px 0 4px 12px;display:flex;flex-direction:column;gap:2px}
+.hstat .v{font-family:var(--display);font-size:30px;font-weight:700;line-height:1.05}
+.hstat .s{font-size:12px;color:var(--ink-2)}
+.card{background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring);padding:14px 14px 8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card-top .big{font-family:var(--display);font-size:28px;font-weight:700;line-height:1;text-align:right}
+.card-top .big small{font-size:14px;color:var(--muted);font-weight:500;margin-left:2px}
+.card-sub{font-size:12px;color:var(--muted)}
+.chart{position:relative;width:100%;height:170px}
+.chart svg{display:block;width:100%;height:100%;overflow:visible}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:18px;height:0;border-top:2px solid var(--series);vertical-align:middle;margin-right:6px}
+.legend i.t{border-top:2px dashed var(--target)}
+.tip{position:fixed;pointer-events:none;z-index:10;background:var(--ink);color:var(--page);font-size:12px;line-height:1.4;padding:8px 10px;border-radius:6px;max-width:240px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.tip b{font-weight:600}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;align-items:start}
+details.panel{background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring)}
+details.panel>summary{cursor:pointer;padding:14px 16px;font-family:var(--display);font-size:18px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;list-style:none;display:flex;justify-content:space-between}
+details.panel>summary::after{content:"+";color:var(--muted)}
+details.panel[open]>summary::after{content:"–"}
+.panel-body{padding:0 16px 16px;display:flex;flex-direction:column;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);font-weight:500}
+input,select,textarea{font:inherit;font-size:14px;padding:7px 9px;border-radius:6px;border:1px solid var(--axis);background:var(--page);color:var(--ink);width:100%;font-variant-numeric:tabular-nums}
+textarea{min-height:60px;resize:vertical}
+.fieldset-t{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.msg{font-size:13px;color:var(--ink-2)}
+.note{font-size:13px;color:var(--ink-2);margin:0;max-width:75ch}
+.notes-list{display:flex;flex-direction:column;gap:8px}
+.notes-list div{font-size:14px;background:var(--surface);box-shadow:0 0 0 1px var(--ring);border-radius:8px;padding:10px 14px}
+.notes-list b{font-family:var(--display);font-weight:600;margin-right:8px;letter-spacing:.02em}
+@media (prefers-reduced-motion:no-preference){.plate{transition:background .3s}}
+@media (max-width:480px){.grid{grid-template-columns:1fr}.chart{height:150px}}
+.plate{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:13px;font-weight:700;color:var(--muted)}
+.plate.done{color:var(--page)}
+.plate.danger{border-bottom:3px solid var(--warn)}
+.rack-key{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.rack-key i{display:inline-block;width:14px;height:3px;background:var(--warn);vertical-align:middle;margin-right:5px}
+.head-l a{color:var(--series);font-weight:600}
+tr.grp td{background:var(--surface-2);font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding:6px 14px}
+.pill.deload{color:var(--muted)}
+.qadd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0 6px;border-top:1px solid var(--grid);margin-top:4px}
+.qadd label{font-size:12px;color:var(--ink-2);font-weight:500}
+.qadd input{width:92px}
+.qadd button{padding:6px 12px}
+.pill.deload::before{content:"D";width:auto;height:auto;background:none;font-size:10px;font-weight:700}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab-btn{background:var(--surface);color:var(--ink-2)}
+.tab-btn.active{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.ef-wide{grid-column:span 2}
+.sum-head{font-family:var(--display);font-size:clamp(22px,3vw,28px);font-weight:600;line-height:1.15;margin:0;max-width:62ch;text-wrap:balance}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.sum-item{background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.sum-item p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.5}
+.sum-tag{display:flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink-2)}
+.sum-tag::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--series)}
+.sum-item.good .sum-tag::before{background:var(--good)} .sum-item.bad .sum-tag::before{background:var(--bad)} .sum-item.warn .sum-tag::before{background:var(--warn)} .sum-item.focus .sum-tag::before{background:var(--ink)}
+@media (max-width:700px){.ef-wide{grid-column:auto}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="head-l">
+      <div class="eyebrow" id="blockDates">13-week block</div>
+      <h1>Autumn Block</h1>
+      <p>Week-on-week progress against the targets in Training Analysis &amp; 14-Week Plan. Updated every morning with the week so far, and finalised on Sunday evening.</p>
+    </div>
+    <div class="rack" aria-label="Block progress">
+      <div class="rack-meta"><span class="eyebrow">Weeks logged</span><span id="rackMeta" class="num"></span></div>
+      <div class="plates" id="plates" style="grid-template-columns:repeat(13,1fr)"></div>
+      <div class="rack-key"><span>D = deload week</span><span><i></i>Weeks 5–6: where past blocks died</span></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button type="button" class="tab-btn active" id="tabOverview">Overview</button>
+    <button type="button" class="tab-btn" id="tabCycling">Cycling</button>
+    <button type="button" class="tab-btn" id="tabStatus">Training status</button>
+  </div>
+
+<div id="page-overview">
+  <div class="banner" id="sampleBanner" hidden>
+    <span><strong>Sample data.</strong> These numbers are made up to show how the board reads. Your real weeks replace them from the first Sunday upload.</span>
+    <button id="sampleToggle" type="button">Hide sample</button>
+  </div>
+
+  <section id="sumSec" hidden>
+    <div class="sec-head"><h2>Summary</h2><span id="sumMeta"></span></div>
+    <p class="sum-head" id="sumHead"></p>
+    <div class="sum-grid" id="sumBody"></div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section>
+    <div class="sec-head"><h2>Where you stand</h2><span>Percentile against men aged 30–39 (you're 33) · population norms, not other lifters</span></div>
+    <div class="hstats" id="stand"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Scorecard</h2><span id="scoreWeek"></span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Metric</th><th>This week</th><th>Plan</th><th>Gap</th><th>vs last week</th><th>Since start</th><th>Status</th></tr></thead>
+      <tbody id="scoreBody"></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Consistency</h2><span>The block lives or dies here. Floor 5 days, plan 6, never 7</span></div>
+    <div class="grid" id="g-load"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Strength</h2><span>Top set as estimated 1-rep max (Epley). DB lifts per hand. Deload weeks not scored</span></div>
+    <div class="grid g3" id="g-strength"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Calisthenics</h2><span>Tested W1, W5, W9 and W13. Weighted pull-up every week</span></div>
+    <div class="grid g3" id="g-cal"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Cycling</h2><span>Building to your first 100 km ride, attempt in W12</span></div>
+    <div class="grid" id="g-engine"></div>
+  </section>
+  <section id="runSection">
+    <div class="sec-head"><h2>Running</h2><span id="runSub">One easy run on Friday, once the calf raise and hop tests pass</span></div>
+    <div class="grid g3" id="g-run"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Nutrition</h2><span>Protein 1.8–2.2 g per kg · about 300 kcal below maintenance (set once it's known), none on long-ride days</span></div>
+    <div class="grid" id="g-fuel"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Body &amp; recovery</h2><span>Weigh-in mean of Tue, Wed, Thu, plus a Sunday waist measurement. Recovery from Garmin weekly averages</span></div>
+    <div class="hstats" id="hstats"></div>
+    <div class="grid g3" id="g-health"></div>
+  </section>
+
+  <section id="notesSec" hidden>
+    <div class="sec-head"><h2>Week notes</h2></div>
+    <div class="notes-list" id="notesList"></div>
+  </section>
+</div>
+
+<div id="page-cycling" hidden>
+  <div class="kpis" id="cyc-kpis"></div>
+
+  <section>
+    <div class="sec-head"><h2>Distance</h2><span>Outdoor + indoor, vs the plan's weekly km target</span></div>
+    <div class="grid g3">
+      <div class="card"><h3>Weekly</h3><div class="chart" id="cyc-chart-weekly"></div>
+        <div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span><span><i class="t"></i>Plan</span></div>
+      </div>
+      <div class="card"><h3>Monthly</h3><div class="chart" id="cyc-chart-monthly"></div>
+        <div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span><span><i class="t"></i>Plan</span></div>
+      </div>
+      <div class="card"><h3>Cumulative, block to date</h3><div class="chart" id="cyc-chart-cumulative"></div>
+        <div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Power &amp; heart rate</h2><span>Per ride, outdoor and indoor plotted separately · power pedals join from Week 3, so expect power blank before then</span></div>
+    <div class="grid g3">
+      <div class="card"><h3>Avg power</h3><div class="chart" id="cyc-chart-power"></div><div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div></div>
+      <div class="card"><h3>Normalized power</h3><div class="chart" id="cyc-chart-np"></div><div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div></div>
+      <div class="card"><h3>Avg heart rate</h3><div class="chart" id="cyc-chart-hr"></div><div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Efficiency</h2><span>Normalized power ÷ average heart rate: watts per heartbeat. Higher means more power for the same effort</span></div>
+    <div class="grid g3">
+      <div class="card ef-wide"><h3>Efficiency per ride</h3><div class="chart" id="cyc-chart-ef"></div><div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div></div>
+      <div class="card"><h3>Reading it</h3>
+        <p class="note">A rising line at a similar kind of ride means your aerobic fitness is improving: the same heart rate is producing more watts.</p>
+        <p class="note">Compare like with like. Indoor and outdoor are plotted separately because cooling, position and terrain differ, so the same heart rate produces different watts. Steady rides also score differently from interval sessions.</p>
+        <p class="note">Poor sleep, heat and tired legs push heart rate up and the score down, so one low ride isn't lost fitness. Rides under 20 minutes or without power aren't scored.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Elevation &amp; speed</h2><span>Per ride, outdoor and indoor plotted separately</span></div>
+    <div class="grid">
+      <div class="card"><h3>Elevation gain</h3><div class="chart" id="cyc-chart-elev"></div><div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div></div>
+      <div class="card"><h3>Avg speed</h3><div class="chart" id="cyc-chart-speed"></div><div class="legend"><span><i></i>Outdoor</span><span><i style="border-top-color:var(--warn)"></i>Indoor</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Ride log</h2><span id="cyc-log-sub"></span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Week</th><th>Type</th><th>Distance</th><th>Duration</th><th>Elev</th><th>Avg HR</th><th>Max HR</th><th>Avg power</th><th>NP</th><th>Efficiency</th><th>Avg speed</th></tr></thead>
+      <tbody id="cyc-logBody"></tbody>
+    </table></div>
+  </section>
+</div>
+<div id="page-status" hidden>
+  <section>
+    <div class="sec-head"><h2>Whole body</h2><span>Every lifting session, ride and other activity, plus this morning's recovery</span></div>
+    <div class="kpis" id="wb-kpis"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Freshness by area</h2><span>When each area was last worked hard, from your Hevy sets. Legs also count hard rides</span></div>
+    <div class="grid g3" id="wb-areas"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Whole-body fitness, fatigue &amp; form</h2><span>Same method as below, with lifting and other activity added to riding</span></div>
+    <div class="card"><div class="chart" id="wb-chart" style="height:230px"></div><div class="legend"><span><i></i>Fitness</span><span><i style="border-top-color:var(--warn)"></i>Fatigue</span><span><i style="border-top-color:var(--good);border-top-width:6px"></i>Form (bars)</span></div></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Load log</h2><span>All training, most recent first</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Session</th><th>Duration</th><th>Detail</th><th>Load</th><th>Based on</th></tr></thead>
+      <tbody id="st-body"></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Cycling readiness</h2><span>Riding and legs only: is today a good day for a hard ride?</span></div>
+    <div class="kpis" id="st-kpis"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Cycling fitness, fatigue &amp; form</h2><span>Daily from 21 Sep. Fitness = 6-week load, fatigue = 7-day load, form = fitness minus fatigue</span></div>
+    <div class="card"><div class="chart" id="st-chart" style="height:230px"></div><div class="legend"><span><i></i>Fitness</span><span><i style="border-top-color:var(--warn)"></i>Fatigue</span><span><i style="border-top-color:var(--good);border-top-width:6px"></i>Form (bars)</span></div></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Intensity mix</h2><span>Last 28 days of power rides, by time. Whole-ride averages, so interval sessions read easier than they felt</span></div>
+    <div class="hstats" id="st-mix"></div>
+  </section>
+  <div class="panels">
+    <details class="panel">
+      <summary>How this differs from Garmin</summary>
+      <div class="panel-body">
+        <p class="note"><b>Power, not heart rate.</b> Each ride's load comes from Normalized Power against your FTP, so a session where tired legs capped your heart rate still counts the work you actually did.</p>
+        <p class="note"><b>Separate indoor FTP.</b> Your rides so far show noticeably less power indoors at the same heart rate, so indoor rides are scored against indoor FTP (outdoor FTP × the indoor factor).</p>
+        <p class="note"><b>Leg work counts, from your Hevy sets.</b> Each working set of a leg exercise scores (RPE − 5) points: an RPE 8 set is 3, an RPE 10 set is 5, warm-ups score nothing. Compound lifts (leg press, split squat, step-up, RDL, lunge) count in full; leg extension, leg curl, back extension and calf raise count half. A set with no RPE is scored as 7.5. Upper-body days don't count, because they barely touch your riding legs. Until Sunday's upload brings the week's Hevy data, Tuesday uses the fixed estimate in Settings.</p>
+        <p class="note"><b>Whole body vs cycling.</b> The top half counts everything: every Hevy set scores (RPE − 5) points, big lifts in full and isolation and core work at half, plus rides by power and walks, swims and yoga by heart rate. Readiness compares this morning's HRV and resting heart rate with your own last four weeks, and adds sleep score. The cycling half below only counts riding and legs, for deciding how hard to ride.</p>
+        <p class="note"><b>Fallback.</b> Rides without power are scored from heart rate against your threshold heart rate.</p>
+        <p class="note"><b>Calibrating.</b> Fitness and fatigue start from the seed value on 21 Sep and firm up after about 6 weeks of data. Retest FTP on fresh legs and update Settings when you do. Rides appear the morning after, from the daily pull.</p>
+      </div>
+    </details>
+    <details class="panel">
+      <summary>Settings</summary>
+      <div class="panel-body">
+        <form id="st-form">
+          <div class="fields">
+            <label class="f" for="st-ftp">Outdoor FTP, W<input id="st-ftp" type="number" step="1" min="50"></label>
+            <label class="f" for="st-if">Indoor factor, %<input id="st-if" type="number" step="1" min="50" max="110"></label>
+            <label class="f" for="st-lthr">Threshold HR, bpm<input id="st-lthr" type="number" step="1" min="100"></label>
+            <label class="f" for="st-leg">Leg day estimate<input id="st-leg" type="number" step="1" min="0"></label>
+            <label class="f" for="st-seed">Starting fitness<input id="st-seed" type="number" step="1" min="0"></label>
+          </div>
+          <label class="f" for="st-skip">Skipped leg days (YYYY-MM-DD, comma separated)<input id="st-skip" type="text"></label>
+          <div class="row"><button class="primary" type="submit" id="st-save">Save settings</button><span class="msg" id="st-msg"></span></div>
+        </form>
+      </div>
+    </details>
+  </div>
+</div>
+
+  <div class="panels">
+    <details class="panel" id="logPanel">
+      <summary>Log or edit a week</summary>
+      <div class="panel-body">
+        <p class="note">Claude fills this every morning with the week so far and finalises it on Sunday evening. Use it to correct a number or add one by hand. Lifts are the week's best top set as e1RM; the plan's weight × reps is shown on the scorecard.</p>
+        <form id="logForm" novalidate class="panel-body" style="padding:0">
+          <label class="f" for="lf-week">Week<select id="lf-week"></select></label>
+          <div id="lf-groups"></div>
+          <label class="f" for="lf-notes">Notes<textarea id="lf-notes"></textarea></label>
+          <div class="row"><button class="primary" type="submit" id="lf-save">Save week</button><span class="msg" id="lf-msg"></span></div>
+        </form>
+      </div>
+    </details>
+
+    <details class="panel" id="tgtPanel">
+      <summary>Targets</summary>
+      <div class="panel-body">
+        <p class="note">Bench, the DB lifts, split squats, step-ups, weighted pull-up and the cycling build follow the tables in the plan doc week by week, and change when the plan does. The settings below are the ones that sit outside those tables.</p>
+        <form id="tgtForm" class="panel-body" style="padding:0">
+          <div class="fieldset-t">Consistency</div>
+          <div class="fields">
+            <label class="f" for="tf-floor">Floor (days)<input id="tf-floor" type="number" min="1" max="7" step="1"></label>
+            <label class="f" for="tf-plan">Plan (days)<input id="tf-plan" type="number" min="1" max="7" step="1"></label>
+            <label class="f" for="tf-sets">Working sets / session<input id="tf-sets" type="number" min="1" step="1"></label>
+          </div>
+          <div class="fieldset-t" id="tfRunT">Running</div>
+          <div class="fields" id="tfRunF">
+            <label class="f" for="tf-runStart">First run week<input id="tf-runStart" type="number" min="1" max="13" step="1"></label>
+            <label class="f" for="tf-runKm">First run (km)<input id="tf-runKm" type="number" step="0.5" min="0"></label>
+            <label class="f" for="tf-runStep">Add km per week<input id="tf-runStep" type="number" step="0.25" min="0"></label>
+            <label class="f" for="tf-runCap">Stop at (km)<input id="tf-runCap" type="number" step="0.5" min="0"></label>
+          </div>
+          <div class="fieldset-t">Nutrition</div>
+          <div class="fields">
+            <label class="f" for="tf-protFloor">Protein floor (g)<input id="tf-protFloor" type="number" step="5" min="0"></label>
+            <label class="f" for="tf-protGoal">Protein aim (g)<input id="tf-protGoal" type="number" step="5" min="0"></label>
+            <label class="f" for="tf-days">Days logged, min<input id="tf-days" type="number" step="1" min="0" max="7"></label>
+          </div>
+          <div class="fieldset-t">Body &amp; recovery</div>
+          <div class="fields">
+            <label class="f" for="tf-bwMin">Min loss kg/wk<input id="tf-bwMin" type="number" step="0.05" min="0"></label>
+            <label class="f" for="tf-bwMax">Max loss kg/wk<input id="tf-bwMax" type="number" step="0.05" min="0"></label>
+            <label class="f" for="tf-bed">Thursday bed by<input id="tf-bed" type="time"></label>
+            <label class="f" for="tf-sleep">Sleep (h)<input id="tf-sleep" type="number" step="0.25" min="0"></label>
+            <label class="f" for="tf-sleepScore">Sleep score<input id="tf-sleepScore" type="number" step="1" min="0" max="100"></label>
+            <label class="f" for="tf-steps">Steps / day<input id="tf-steps" type="number" step="500" min="0"></label>
+            <label class="f" for="tf-stress">Stress, at or under<input id="tf-stress" type="number" step="1" min="0" max="100"></label>
+          </div>
+          <div class="row"><button class="primary" type="submit" id="tf-save">Save targets</button><span class="msg" id="tf-msg"></span></div>
+        </form>
+      </div>
+    </details>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script id="site-data" type="application/json">{"weeks": {"2026-10-12": {"avgSets": 25.5, "bench": 110.4, "bodyweight": 90.47, "bss": 20, "daysLogged": 6, "dbRow": 41.2, "dbShoulder": 33.3, "feel": 5.9, "hrv": 34, "inProgress": true, "inclineDb": 38, "kcal": 3342, "kcalBurned": 3824, "lateStarts": 0, "legPress": 213.3, "longRide": 52.5, "lsit": 15, "notes": "WEEK 4 (12-18 Oct), WEEK-TO-DATE as of Sun 18 Oct 07:50 (auto). Sunday is a rest day and only just started: steps (12,086/day) and kcalBurned (3,824/day) use the estimate in the pull (average of the six complete days), to be confirmed from the final Sunday figures next Monday. Sat 17 Oct is now final: 6,065 steps, 5,842 kcal out, 446 intensity minutes (two rides, 63.4 km). 6 training days (Mon-Sat); Mon/Tue/Fri floor hit, 0 late starts. No new Hevy sessions or rides since Saturday, so lifts and cycling are unchanged: bench 92x6 x4 e1RM 110.4, leg press 160x10 x4 e1RM 213, BSS 15x10 e1RM 20, DB row 41.2, incline DB 38, shoulder press 33.3, weighted pull-up +7.5 kg, pull-up best 13, L-sit 15 s. Cycling 117.9 km: indoor 54.5 (Mon 24.7, Tue 14.6, Thu 15.2), outdoor 63.4 on Sat (long ride 52.5 km at 06:26, avg HR 149 vs the 145 cap, then 10.9 km at 12:19). Long-ride target 45 km, done 52.5.  SLEEP: Garmin's Sat 17 Oct morning (score 56, REM 0, HRV 27, RHR 62) is unreliable because James fell asleep during a Garmin yoga activity, so that morning uses his Fitbit for sleep (7h 05m, score 72, REM 55 min, restlessness above range, sleeping HR 72) and is excluded from HRV and RHR. Sun 18 Oct morning is poor: 6.77 h, score 42, REM 10 min, HRV 21 UNBALANCED, RHR 63, bed 23:59. hrv 34.0 and rhr 59.8 are Mon-Fri + Sun means (6 mornings, Sat excluded); sleepHours 6.4 and sleepScore 63 are 7-night means with Sat from Fitbit. Tripwire basis (Mon, Tue, Wed, Fri mornings) HRV mean 41.0, just under the 42 line; Thu, Sat and Sun are excluded, so the tripwire is not tripped but has no margin. Fri's RHR now reads 62 in the pull (63 in last week's doc). Weigh-ins still 90.8/90.4/90.2 (mean 90.47). waist, feel and dips left blank for James. MFP (diary PDF, 18 Oct, Mon-Sat; Sun not logged yet): 3,455 / 3,244 / 3,640 / 3,666 / 2,794 / 3,251 kcal = 3,342/day against the 2,750 target (+590/day); protein 219 / 224 / 181 / 233 / 206 / 78 = 190 g/day (2.10 g/kg vs 90.47), but Sat's 78 g is under-logged (Popeye wrap has no macros) - Mon-Fri 213 g. Fri 16 Oct has a single 1,580 kcal 'Pre Cycle Pasta Bake' quick entry. This is the third week above target (W2 2,829, W3 2,999, W4 3,342) and the Tue-Thu weigh-in mean is up 1.64 kg to 90.47 (90.8/90.4/90.2): intake was not near 2,750, so the end-of-W4 decision test does NOT count; W5 repeats it. Thu 15 morning HRV 19, REM 6 min, score 38 is the cost. Fri 16: Garmin Multisport 98 min (swim + calisthenics, max HR 166, no avg HR in summary). Fri order followed this week: pull-ups first (13/8/5/5, set 1 RPE 9.5, so 13 is a genuine max), then chest dips 5/12/11/12 (RPE 8-9, down from 20 in W3 - fatigue from the pull-ups, not a regression to worry about yet), L-sit 15/15/15/13 s (flat, still 5 s under W1's target). Weighted pull-up +7.5: 7/6/6/6 (target x6 hit). DB row 32.5x8 x4, shoulder press 25 10/10/8, incline 30 8/7/6 (RPE 9.5 on the last two), BSS 15 10/9/7 (RPE 9.5 - ankle). ANKLE MRI (reported 18 Oct): grade 2 partial tears of ATFL and CFL, possible tiny avulsion fracture at the fibular tip, lateral talar dome bone bruise, joint effusion, underlying chronic instability. Step-ups dropped; running paused (runPaused already set in config). Early starts: Mon 05:10, Tue 04:37, Wed 04:56, Fri 05:54 with wake-ups at ~03:55 and 5.8-6.2 h sleep on Mon-Wed nights. Garmin VO2 max 44.8 (generic and cycling still identical). Cycling this week was well above plan (117.9 vs 55 km): Tue 131 bpm and Thu 130 bpm rides were true Z2; Mon (140) and Sat PM (157) were not. Stress 47 is the Mon-Sat Garmin mean (Sunday's partial 66 left out). UPDATE 18 Oct (James): Popeye wrap estimated at 25 g protein / 46 g carbs / 22 g fat, so Sat protein 103 g and the week 194 g. Thu 15 ride was a tempo session by James's account (efforts 134-151 W vs 157 W indoor FTP), not Z2; only Tue (131 bpm) was true Z2. Calories: Garmin out 3,824/day vs 3,342 in is ~480 under on paper, but the same paper deficit (~380 W2, ~380 W3) showed no weight loss, so Garmin reads high; the scale decides. Sleep: James wakes ~04:00 most days; bed 20:15 on Thu gave 7.78 h / score 79, so the lever is bedtime (~20:30), not start time.", "protein": 194, "pullups": 13, "rhr": 59.8, "rideKm": 117.9, "sessions": 6, "sleepHours": 6.4, "sleepScore": 63, "steps": 12086, "stress": 47, "thuBed": 20.25, "vo2max": 44.8, "waist": 89.5, "week": "2026-10-12", "wpu": 7.5}, "2026-09-21": {"avgSets": 17.5, "bench": 102, "bodyweight": 88.65, "bss": 13.3, "daysLogged": 7, "dbRow": 31.7, "dbShoulder": 26.7, "feel": 7, "hrv": 42, "inclineDb": 35.5, "kcal": 2335, "kcalBurned": 3690, "lateStarts": 0, "longRide": 22.9, "lsit": 20, "notes": "Stuttgart travel Thu-Sun. Floor (5 days) hit, plan (6) missed - Sat was a full rest day. Bench: Mon worked to 82x6 (in W1's 80-82.5 range); Fri 'release valve' at East Side Gym went to 85x6 (W2's target weight) at RPE 8.5-9 instead of the planned lower-weight/higher-rep back-off - strong but off-template, James caught it after the fact. Cycling: 22.9km ridden in London on Thu before flying out to Stuttgart that evening - ahead of the confirmed 20km W1 re-entry target (plan doc corrected to match). Sleep score (avg 63 vs 80) and HRV (42 vs 46 baseline) down Fri-Sat; stress avg 51 (22-27 Sep) vs target 30, also elevated. Thu weigh-in missing (travel) - bodyweight mean from Tue/Wed only. MFP: 157g protein/day avg (just under 160g floor), 2335kcal/day avg logged. Vs Garmin's 3690kcal/day calories-out estimate that's a ~1355kcal/day average gap - large for one week, plausibly inflated by Saturday's step count (21.4k steps) and reduced appetite while travelling; don't set maintenance off this week alone, use Weeks 2-4. Waist removed (was 94.5): measured wrongly with the old tape; W2's 90.0 is the baseline.", "protein": 157, "pullups": 8, "rhr": 62, "rideKm": 22.9, "sessions": 5, "sleepHours": 6.82, "sleepScore": 63, "stepUp": 10.7, "steps": 10235, "stress": 51, "thuBed": 22.35, "week": "2026-09-21", "wpu": 5}, "2026-09-28": {"avgSets": 23.25, "bench": 102, "bodyweight": 88.8, "bss": 17.5, "daysLogged": 7, "dbRow": 34.8, "dbShoulder": 30, "dips": 17, "feel": 7.5, "hrv": 43, "inclineDb": 34.8, "kcal": 2829, "kcalBurned": 3206, "lateStarts": 0, "longRide": 38, "notes": "Dips max test Fri 2 Oct: 17 strict, full depth, first time training dips. Lean was fairly upright (front-on video) - focus on forward lean. WEEK 2 (28 Sep-4 Oct), strong week: 6 training days (plan 6), Mon/Tue/Fri 06:00 all hit, 0 late starts, all 3 gating nights in bed 21:00-21:44 (Thu night 21:15), Sat full rest, not a 7-day week. Bench Mon 4x6 @85 (RPE 8-8.5; target 4x5) - e1RM 102, already at W3's level; stay on schedule, W3 = 87.5x5. All accessories on/ahead of W2 target (BSS 12.5x12, DB row 27.5x8 on target, shoulder press 22.5x10, incline 27.5 8/8/6, step-up 15x10 per hand - confirmed by James as accurate, new baseline; he was going light before). Weighted pull-up +5: 8/8/7/5 (Wed, RPE 9.5 last set). Bodyweight pull-ups and L-sit NOT recorded this week: Friday's pull-ups were the prescribed low-rep work, not a max test, and the L-sit (14 s, strict) came straight after a max dip set - neither was a test, so neither is scored. Wed HRV 34 / sleep 65 / RHR 62 on the heaviest session of the week. Cycling: Thu 1 Oct 22.5 km + Sun 4 Oct 38.0 km (long ride, 98 min, 225 m, avg HR 147) = 60.5 km vs 45 target (long ride 38 vs 35). No power meter yet (W3). MFP final (corrected 11 Oct): Sun 4 Oct finished at 2,810 kcal / 175 g, so W2 avg 2,829 kcal / 196 g protein (2.21 g/kg vs 88.8 kg); 6 of 7 days >=177 g. Long-ride day under-fuelled (2,810 in vs 1,254 ride burn). Garmin full Sun 4 Oct calories out 4,234 (James, 11 Oct), so W2 Garmin out = 3,206/day over 7 days (was Mon-Sat 3,035); Sun 4 Oct itself was a ~1,400 kcal deficit on a long-ride day. Garmin out Mon-Sat avg 3035 kcal -> ~200 kcal/day deficit, weigh-in mean 88.8 (T89.0/W89.1/Th88.3) flat vs 88.65 - too early to judge, review at W4. Waist 90.0 cm with a new tape is the baseline; W1's 94.5 was measured wrongly and should be disregarded. How you felt: 7.5.", "protein": 196, "rhr": 59, "rideKm": 60.5, "sessions": 6, "sleepHours": 6.95, "sleepScore": 72, "stepUp": 20, "steps": 9713, "stress": 37, "thuBed": 21.25, "waist": 90, "week": "2026-09-28", "wpu": 5}, "2026-10-05": {"avgSets": 24, "bench": 105, "bodyweight": 88.83, "bss": 20, "daysLogged": 7, "dbRow": 38, "dbShoulder": 32.5, "dips": 20, "feel": 8, "hrv": 41, "inclineDb": 34.8, "kcal": 2999, "kcalBurned": 3381, "lateStarts": 0, "legPress": 200, "longRide": 38.6, "lsit": 15, "notes": "WEEK 3 (5-11 Oct). Two days working 2 h north (Thu/Fri at a gym in Leamington Spa), work social Thu, hosted dinner party Fri. Mon/Tue/Fri floor all hit, 0 late starts (latest 07:53 Thu). 6 training days (Mon, Tue, Wed turbo+yoga, Thu, Fri, Sun); Sat 60-min indoor ride (avg HR 136, 85 W) counted as Z2 rest under the rule agreed 11 Oct - it was 7 activity days. Bench 87.5x6 x4 (RPE 7.5-8; table 87.5x5), e1RM 105. Leg press baseline: 120/130/135/150x10, top RPE 8 -> L = 145 kg (plan updated). BSS 15x10, step-up 17.5x10, shoulder press 25x9 (RPE 9-9.5), DB row 30x8 x3, incline 27.5x8 x3 (up from 8/8/6). Weighted pull-up +5: 8/8/6/6 (Thu). Fri: dips 20 (baseline 17), pull-ups 8, L-sit 15 s - NOT in test order (handstand + dips first), so treat pull-ups/L-sit as floors. Cycling: Wed indoor 16.5 km (power tests), Sat indoor 22.9 km Z2, Sun indoor 9.4 km retest + outdoor long ride 38.6 km (7.0 km manual + 31.6 km recorded, 152 W avg / 173 NP, avg HR 155) = 87.4 km (outdoor 38.6, indoor 48.8) vs 45 target. Pull script put road_biking under 'Other activities' and missed it from weekly km. Mon-Thu HRV 47 / sleep 77, Fri-Sun HRV 32 / sleep 54. MFP Mon-Sat (Sun half-logged, ignored): 3,011 kcal, 176 g protein (1.98 g/kg vs 88.83), Thu 149 g below floor; Sat 3,638. Garmin out Mon-Sat 3,274. Weigh-ins 88.6/88.4/89.5, mean 88.83 - flat for 3 weeks. VO2 max now flowing (49.2 -> 45.0) but run == cycle every day, parse suspect. Waist 89, feel 8 (entered by James). FINAL SUNDAY (18 Oct corrections): Sun 11 Oct MFP 2,924 kcal / 194 g, so W3 = 2,999 kcal and 179 g protein over 7 days (was 3,011 / 176 on Mon-Sat). Garmin out for Sun 11 Oct 4,021 (4,510 steps), so W3 averaged 3,381 out over 7 days. Sunday's 2,924 in against 4,021 out was a ~1,100 kcal deficit on a long-ride day, below the 3,300 minimum in the plan.", "protein": 179, "pullups": 8, "rhr": 57, "rideKm": 87.4, "sessions": 6, "sleepHours": 6.96, "sleepScore": 67, "stepUp": 23.3, "steps": 8370, "stress": 41, "thuBed": 22.55, "vo2max": 45, "waist": 89, "week": "2026-10-05", "wpu": 5}}, "rides": {"2026-10-11": {"avgHr": 155, "avgPower": 152, "avgSpeed": 23.4, "calories": 1123, "date": "2026-10-11", "distanceKm": 38.56, "elevM": 212, "indoor": false, "maxHr": 179, "movingMin": 97, "notes": "Sun long ride (W3 target 35 km). First 7.0 km/17 min not recorded, added manually; HR, power, elevation and speed are from the recorded 31.56 km. First outdoor power-pedal ride. Puncture at the end.", "npPower": 173, "type": "road_biking"}, "2026-10-12": {"avgHr": 140, "avgPower": 96, "calories": 443, "date": "2026-10-12", "distanceKm": 24.7, "elevM": 20, "indoor": true, "maxHr": 161, "movingMin": 60, "notes": "Mon 15:07 indoor Z1-2 recovery ride, 60 min steady. Avg cadence 81 rpm. Indoor FTP 157 W (85% of 185); 75% = 118 W. No efforts above 75% FTP lasting 2+ min; best 5 min 112 W. Time in zones (% indoor FTP): Z1 23.1 min, Z2 26.0, Z3 7.2, Z4 2.2, Z5 0.8, Z6 0.7, Z7 0.2.", "npPower": 99, "type": "indoor_cycling"}, "2026-10-17": {"avgHr": 149, "avgPower": 140, "avgSpeed": 21.7, "calories": 1445, "date": "2026-10-17", "distanceKm": 52.46, "elevM": 220, "indoor": false, "maxHr": 182, "movingMin": 144, "notes": "Sat 06:26 Lambeth Road Cycling, long ride (W4 target 45 km, done 52.5 km). Elapsed 188 min, ~42 min stopped. Avg cadence 79 rpm. Outdoor FTP 185 W; Z2 ceiling (75%) 139 W. Best 5 min 204 W, best 20 min 167 W (90% FTP). Max HR 182. HR target for the ride was avg 145 or under: avg 149, and the last 20 km ran 160-170 bpm. 5 km splits (W / HR / cad): 0-5 km 132/142/78; 5-10 km 135/130/74; 10-15 km 147/144/84; 15-20 km 111/147/78; 20-25 km 119/140/71; 25-30 km 135/144/77; 30-35 km 144/153/78; 35-40 km 171/170/88 (hardest block, 12.2 min, ~92% FTP); 40-45 km 155/164/83; 45-50 km 153/161/82; last 2.46 km 142/161/81. Time in zones (% outdoor FTP, includes coasting): Z1 49.3 min, Z2 19.1, Z3 21.2, Z4 19.1, Z5 13.0, Z6 14.2, Z7 10.5. Second ride the same day at 12:19 (separate doc). Sleep before the ride: Garmin's night is unreliable (James fell asleep during a Garmin yoga activity, so score 56 / REM 0 / HRV 27 / RHR 62 are not used). Fitbit: 7h 05m, score 72, REM 55 min, restlessness and interruptions above range, avg sleeping HR 72 bpm.", "npPower": 179, "type": "road_biking"}, "2026-09-24": {"avgHr": 145, "avgSpeed": 22.2, "calories": 763, "date": "2026-09-24", "distanceKm": 22.91, "elevM": 110, "indoor": false, "maxHr": 177, "movingMin": 62, "notes": "Lambeth Road Cycling, ridden in London on Thursday before flying out to Stuttgart that evening. No power meter yet (arrives W3).", "type": "road_biking"}, "2026-10-04": {"avgHr": 147, "avgSpeed": 23.1, "calories": 1254, "date": "2026-10-04", "distanceKm": 38.02, "elevM": 225, "indoor": false, "maxHr": 181, "movingMin": 98, "notes": "Lambeth Road Cycling, Sun 06:09 long ride (W2 target 35 km). No power meter yet (arrives W3).", "type": "road_biking"}, "2026-10-10": {"avgHr": 136, "avgPower": 85, "avgSpeed": 22.9, "calories": 404, "date": "2026-10-10", "distanceKm": 22.9, "elevM": 42, "indoor": true, "maxHr": 161, "movingMin": 60, "notes": "Sat Z2 ride, counted as rest under the 11 Oct rule. Power very low for HR 136 vs Sunday indoor (123 W at HR 138) - check trainer calibration / power source.", "npPower": 89, "type": "indoor_cycling"}, "2026-10-13": {"avgHr": 131, "avgPower": 108, "avgSpeed": 21.8, "calories": 325, "date": "2026-10-13", "distanceKm": 14.6, "elevM": 134, "indoor": true, "maxHr": 149, "movingMin": 40, "notes": "Tue 12:47 indoor Z1-2 recovery ride, 40 min, 14.6 km (activities CSV; FIT distance field ignored), avg cadence 80 rpm. Indoor FTP 157 W; 75% = 118 W. One brief bump above 118 W: 2.8 min @127 W, HR 135, cad 80 (~81% FTP). Best 5 min 132 W. Time in zones (% indoor FTP): Z1 9.4 min, Z2 16.0, Z3 9.4, Z4 3.2, Z5 1.2, Z6 0.5, Z7 0.3. Same day as 04:41 Legs session (Hevy) and 17:20 walk.", "npPower": 114, "type": "indoor_cycling"}, "2026-10-07": {"avgHr": 148, "avgPower": 133, "avgSpeed": 28.3, "calories": 332, "date": "2026-10-07", "distanceKm": 16.5, "elevM": 19, "indoor": true, "maxHr": 162, "movingMin": 35, "notes": "Wed turbo (moved from Thu, away for work), two parts combined: 06:46-07:11 power efficiency test (3-min warm-up + 20-min block, 135 W NP) and a 15:13 12-min block (154 W NP). NP shown is the combined estimate.", "npPower": 142, "type": "indoor_cycling"}, "2026-10-17-pm": {"avgHr": 157, "avgPower": 139, "avgSpeed": 22.1, "calories": 297, "date": "2026-10-17", "distanceKm": 10.94, "elevM": 47, "indoor": false, "maxHr": 184, "movingMin": 30, "notes": "Sat 12:19 City of Westminster Road Cycling, second ride of the day (after the 06:26 long ride). 30 min moving, 33 elapsed, avg cadence 75 rpm. Outdoor FTP 185 W; Z2 ceiling 139 W. Best 5 min 165 W, best 20 min 146 W (79% FTP). Max power 895 W. 5 km splits (W / HR / cad): 0-5 km 138/151/72; 5-10 km 142/162/77; last 0.94 km 131/164/80. Time in zones (% outdoor FTP, includes coasting): Z1 13.7 min, Z2 1.7, Z3 2.4, Z4 2.9, Z5 2.3, Z6 3.0, Z7 4.2. HR ran 10-15 bpm higher than the morning ride at the same power, so it was ridden on tired legs.", "npPower": 179, "type": "road_biking"}, "2026-10-15": {"avgHr": 130, "avgPower": 89, "avgSpeed": 13, "calories": 489, "date": "2026-10-15", "distanceKm": 15.2, "elevM": 285, "indoor": true, "maxHr": 161, "movingMin": 70, "notes": "Thu 05:50 Lambeth Indoor Cycling, 70 min, avg cadence 77 rpm (pedalling time). Indoor FTP 157 W (85% of 185); 75% = 118 W. Efforts above 118 W (30 s smoothed, 2+ min): 20-25 min 4.9 min @143 W, HR 135, cad 86; 33-36 min 3.1 min @134 W, HR 144, cad 91; 42-48 min 6.0 min @151 W, HR 152, cad 85 (best block); 52-55 min 3.4 min @139 W, HR 148, cad 84; 57-60 min 2.7 min @143 W, HR 152, cad 84. Not a structured interval session: ~6 min easy spin then ~3 min stopped at min 6-9, easy spinning between efforts, 10 min cooldown at ~80 W. Time in zones (% indoor FTP): Z1 34.4 min, Z2 14.6, Z3 8.9, Z4 6.5, Z5 3.6, Z6 2.0, Z7 0.3. Done on 5.2 h sleep, score 38, HRV 19 (UNBALANCED), RHR 61 after a poor night. Power low for HR again (as 10 Oct) - check trainer calibration.", "npPower": 113, "type": "indoor_cycling"}, "2026-10-11-indoor": {"avgHr": 138, "avgPower": 123, "avgSpeed": 18.7, "calories": 271, "date": "2026-10-11", "distanceKm": 9.4, "elevM": 150, "indoor": true, "maxHr": 161, "movingMin": 30, "notes": "Sun 05:48 MyWhoosh efficiency test (James v Harry comp baseline), Kickr Snap + Rally pedals on Edge 540. COMP BASELINE = final 15 min of the 20-min test lap (min 15-30): 135.3 W avg at avg HR 149.5, cadence 86 (matches comp/config; re-verified from the .fit 11 Oct). Full 20-min lap: 139 W / HR 149. Whole ride 123 W / HR 138 incl. warm-up. Replaces the 7 Oct test (pedals under-torqued).", "npPower": 135, "type": "indoor_cycling"}, "2026-10-01": {"avgHr": 144, "avgSpeed": 21.9, "calories": 784, "date": "2026-10-01", "distanceKm": 22.49, "elevM": 109, "indoor": false, "maxHr": 172, "movingMin": 62, "notes": "Lambeth Road Cycling, Thu 05:54 easy ride. No power meter yet (arrives W3).", "type": "road_biking"}}, "lifts": {"2026-10-12": {"core": 3.8, "date": "2026-10-12", "exercises": {"Bench Press (Barbell)": 4, "Chest Fly (Dumbbell)": 3, "Hollow Rock": 3, "Incline Bench Press (Dumbbell)": 3, "Skullcrusher (Dumbbell)": 3, "Triceps Dip (Weighted)": 3}, "legs": 0, "method": "hevy-rpe-v1", "pull": 0, "push": 46.2, "sets": 19, "total": 50}, "2026-09-30": {"core": 19.5, "date": "2026-09-30", "exercises": {"Back Extension (Weighted Hyperextension)": 3, "Cable Crunch": 3, "Dumbbell Row": 4, "Face Pull": 3, "Handstand Hold": 4, "Pull Up (Weighted)": 4, "Seated Incline Curl (Dumbbell)": 3, "Side Plank": 3, "Weighted Hanging Leg Raise": 3}, "legs": 5.8, "method": "hevy-rpe-v1", "pull": 34.8, "push": 0, "sets": 30, "total": 60}, "2026-09-29": {"core": 0, "date": "2026-09-29", "exercises": {"Bulgarian Split Squat (Dumbbell)": 3, "Dumbbell Step Up": 3, "Lateral Raise (Dumbbell)": 3, "Leg Extension (Machine)": 3, "Lying Leg Curl (Machine)": 3, "Seated Calf Raise": 3, "Shoulder Press (Dumbbell)": 3}, "legs": 34, "method": "hevy-rpe-v1", "pull": 0, "push": 14.8, "sets": 21, "total": 48.8}, "2026-10-16": {"core": 10, "date": "2026-10-16", "exercises": {"Chest Dip": 4, "Diamond Push Up": 2, "Handstand Hold": 4, "L-Sit Hold": 4, "Lunge": 2, "Pull Up": 4}, "legs": 7, "method": "hevy-rpe-v1", "pull": 16, "push": 19.5, "sets": 20, "total": 52.5}, "2026-09-21": {"core": 0, "date": "2026-09-21", "exercises": {"Bench Press (Barbell)": 4, "Chest Fly (Dumbbell)": 3, "Incline Bench Press (Dumbbell)": 3, "Skullcrusher (Dumbbell)": 3}, "legs": 0, "method": "hevy-rpe-v1", "pull": 0, "push": 27.8, "sets": 13, "total": 27.8}, "2026-10-09": {"core": 10, "date": "2026-10-09", "exercises": {"Chest Dip": 4, "Diamond Push Up": 2, "Handstand Hold": 4, "L-Sit Hold": 4, "Lunge": 2, "Pull Up": 4}, "legs": 6, "method": "hevy-rpe-v1", "pull": 12.5, "push": 20, "sets": 20, "total": 48.5}, "2026-09-25": {"core": 3.8, "date": "2026-09-25", "exercises": {"Bench Press (Barbell)": 3, "L-Sit Hold": 3, "Pull Up": 3}, "legs": 0, "method": "hevy-rpe-v1", "pull": 12, "push": 11.5, "sets": 9, "total": 27.2}, "2026-09-28": {"core": 0, "date": "2026-09-28", "exercises": {"Bench Press (Barbell)": 4, "Chest Dip (Weighted)": 3, "Chest Fly (Dumbbell)": 3, "Incline Bench Press (Dumbbell)": 3, "Skullcrusher (Dumbbell)": 3}, "legs": 0, "method": "hevy-rpe-v1", "pull": 0, "push": 48, "sets": 16, "total": 48}, "2026-09-22": {"core": 0, "date": "2026-09-22", "exercises": {"Bulgarian Split Squat (Dumbbell)": 3, "Dumbbell Step Up": 3, "Lateral Raise (Dumbbell)": 3, "Leg Extension (Machine)": 3, "Romanian Deadlift (Dumbbell)": 3, "Seated Calf Raise": 3, "Shoulder Press (Dumbbell)": 3}, "legs": 27, "method": "hevy-rpe-v1", "pull": 0, "push": 11.2, "sets": 21, "total": 38.2}, "2026-10-13": {"core": 0, "date": "2026-10-13", "exercises": {"Back Extension (Weighted Hyperextension)": 3, "Bulgarian Split Squat (Dumbbell)": 3, "Hip Thrust (Machine)": 3, "Lateral Raise (Dumbbell)": 3, "Leg Extension (Machine)": 3, "Leg Press (Machine)": 4, "Seated Calf Raise": 3, "Shoulder Press (Dumbbell)": 3}, "legs": 46, "method": "hevy-rpe-v1", "pull": 0, "push": 15, "sets": 25, "total": 61}, "2026-10-08": {"core": 19, "date": "2026-10-08", "exercises": {"Cable Crunch": 3, "Dumbbell Row": 4, "Face Pull": 3, "Handstand Hold": 4, "Pull Up (Weighted)": 4, "Seated Incline Curl (Dumbbell)": 3, "Side Plank": 3, "Weighted Hanging Leg Raise": 3}, "legs": 0, "method": "hevy-rpe-v1", "pull": 39.5, "push": 0, "sets": 27, "total": 58.5}, "2026-10-06": {"core": 0, "date": "2026-10-06", "exercises": {"Back Extension (Weighted Hyperextension)": 3, "Bulgarian Split Squat (Dumbbell)": 3, "Dumbbell Step Up": 3, "Lateral Raise (Dumbbell)": 3, "Leg Extension (Machine)": 3, "Leg Press (Machine)": 4, "Seated Calf Raise": 3, "Shoulder Press (Dumbbell)": 3}, "legs": 47.5, "method": "hevy-rpe-v1", "pull": 0, "push": 17.2, "sets": 25, "total": 64.8}, "2026-10-14": {"core": 19.5, "date": "2026-10-14", "exercises": {"Back Extension (Weighted Hyperextension)": 3, "Cable Crunch": 3, "Dumbbell Row": 4, "Face Pull": 3, "Handstand Hold": 4, "Pull Up (Weighted)": 4, "Seated Incline Curl (Dumbbell)": 3, "Side Plank": 3, "Weighted Hanging Leg Raise": 3}, "legs": 4.5, "method": "hevy-rpe-v1", "pull": 37, "push": 0, "sets": 30, "total": 61}, "2026-10-02": {"core": 10, "date": "2026-10-02", "exercises": {"Chest Dip": 4, "Diamond Push Up": 2, "Handstand Hold": 4, "L-Sit Hold": 4, "Pull Up": 4}, "legs": 0, "method": "hevy-rpe-v1", "pull": 11.5, "push": 17.5, "sets": 18, "total": 39}, "2026-10-05": {"core": 0, "date": "2026-10-05", "exercises": {"Bench Press (Barbell)": 4, "Chest Fly (Dumbbell)": 3, "Incline Bench Press (Dumbbell)": 3, "Skullcrusher (Dumbbell)": 3, "Triceps Dip (Weighted)": 3}, "legs": 0, "method": "hevy-rpe-v1", "pull": 0, "push": 41.5, "sets": 16, "total": 41.5}, "2026-09-23": {"core": 0, "date": "2026-09-23", "exercises": {"Dumbbell Row": 4, "Face Pull": 3, "Hammer Curl (Dumbbell)": 3, "Pull Up (Weighted)": 4, "Seated Incline Curl (Dumbbell)": 4}, "legs": 0, "method": "hevy-rpe-v1", "pull": 36.2, "push": 0, "sets": 18, "total": 36.2}}, "daily": {"2026-10-11": {"bbHigh": 37, "date": "2026-10-11", "hrv": 32, "rhr": 59, "sleepH": 8.23, "sleepScore": 54, "stress": 45}, "2026-10-12": {"bbHigh": 40, "date": "2026-10-12", "hrv": 46, "other": [{"avgHr": 97, "load": 13.6, "min": 49, "name": "Yoga", "type": "yoga"}], "otherLoad": 13.6, "rhr": 58, "sleepH": 5.98, "sleepScore": 73, "stress": 43}, "2026-09-30": {"bbHigh": 42, "date": "2026-09-30", "hrv": 34, "other": [{"avgHr": 76, "load": 5, "min": 59, "name": "Yoga", "type": "yoga"}], "otherLoad": 5, "rhr": 62, "sleepH": 6.07, "sleepScore": 65, "stress": 40}, "2026-10-17": {"date": "2026-10-17", "otherNote": "Sleep from Fitbit (7h 05m, score 72): Garmin's night was corrupted by falling asleep during a Garmin yoga activity, so Garmin HRV 27, RHR 62, body battery and its sleep score are left out.", "sleepH": 7.08, "sleepScore": 72, "stress": 63}, "2026-10-03": {"bbHigh": 49, "date": "2026-10-03", "hrv": 42, "rhr": 59, "sleepH": 6.73, "sleepScore": 61, "stress": 30}, "2026-10-18": {"bbHigh": 17, "date": "2026-10-18", "hrv": 21, "otherNote": "Sunday partial: stress not yet final. Poor night: bed 23:59, REM 10 min, HRV UNBALANCED.", "rhr": 63, "sleepH": 6.77, "sleepScore": 42}, "2026-09-29": {"bbHigh": 68, "date": "2026-09-29", "hrv": 53, "rhr": 59, "sleepH": 7.78, "sleepScore": 82, "stress": 39}, "2026-09-24": {"bbHigh": 64, "date": "2026-09-24", "hrv": 56, "rhr": 54, "sleepH": 6.67, "sleepScore": 78}, "2026-10-16": {"bbHigh": 39, "date": "2026-10-16", "hrv": 37, "other": [{"min": 98, "name": "Lambeth Multisport", "type": "multi_sport"}], "otherLoad": 15, "otherNote": "Multisport: 1,000 m pool swim and 11 min walk, no HR on the swim, so its load is estimated at 15", "rhr": 63, "sleepH": 7.78, "sleepScore": 79, "stress": 29}, "2026-09-21": {"bbHigh": 54, "date": "2026-09-21", "hrv": 46, "rhr": 59, "sleepH": 7.92, "sleepScore": 83}, "2026-10-09": {"bbHigh": 27, "date": "2026-10-09", "hrv": 30, "rhr": 61, "sleepH": 7.17, "sleepScore": 51, "stress": 51}, "2026-09-25": {"bbHigh": 38, "date": "2026-09-25", "hrv": 39, "rhr": 58, "sleepH": 5.28, "sleepScore": 57}, "2026-10-04": {"bbHigh": 70, "date": "2026-10-04", "hrv": 48, "rhr": 59, "sleepH": 7, "sleepScore": 76, "stress": 37}, "2026-09-28": {"bbHigh": 44, "date": "2026-09-28", "hrv": 48, "rhr": 57, "sleepH": 6.85, "sleepScore": 76, "stress": 29}, "2026-09-26": {"bbHigh": 30, "date": "2026-09-26", "hrv": 37, "rhr": 63, "sleepH": 6.03, "sleepScore": 33}, "2026-10-10": {"bbHigh": 36, "date": "2026-10-10", "hrv": 35, "rhr": 60, "sleepH": 6.93, "sleepScore": 57, "stress": 42}, "2026-09-22": {"bbHigh": 26, "date": "2026-09-22", "hrv": 33, "rhr": 62, "sleepH": 8.15, "sleepScore": 52}, "2026-10-13": {"bbHigh": 40, "date": "2026-10-13", "hrv": 47, "other": [{"avgHr": 106, "load": 29.2, "min": 74, "name": "Lambeth Walking", "type": "walking"}], "otherLoad": 29.2, "rhr": 53, "sleepH": 5.77, "sleepScore": 68, "stress": 38}, "2026-10-07": {"bbHigh": 58, "date": "2026-10-07", "hrv": 45, "other": [{"avgHr": 83, "load": 9.3, "min": 68, "name": "Yoga", "type": "yoga"}], "otherLoad": 9.3, "rhr": 55, "sleepH": 6.62, "sleepScore": 78, "stress": 35}, "2026-10-15": {"bbHigh": 15, "date": "2026-10-15", "hrv": 19, "rhr": 61, "sleepH": 5.18, "sleepScore": 38, "stress": 51}, "2026-10-08": {"bbHigh": 64, "date": "2026-10-08", "hrv": 48, "rhr": 56, "sleepH": 5.92, "sleepScore": 74, "stress": 40}, "2026-10-06": {"bbHigh": 61, "date": "2026-10-06", "hrv": 49, "rhr": 55, "sleepH": 7.13, "sleepScore": 77, "stress": 40}, "2026-09-27": {"bbHigh": 5, "date": "2026-09-27"}, "2026-10-01": {"bbHigh": 48, "date": "2026-10-01", "hrv": 39, "rhr": 59, "sleepH": 7.12, "sleepScore": 79, "stress": 42}, "2026-10-14": {"bbHigh": 44, "date": "2026-10-14", "hrv": 34, "rhr": 62, "sleepH": 6.23, "sleepScore": 68, "stress": 50}, "2026-10-02": {"bbHigh": 46, "date": "2026-10-02", "hrv": 39, "rhr": 58, "sleepH": 7.12, "sleepScore": 63, "stress": 42}, "2026-10-05": {"bbHigh": 68, "date": "2026-10-05", "hrv": 45, "rhr": 56, "sleepH": 6.7, "sleepScore": 79, "stress": 40}, "2026-09-23": {"bbHigh": 41, "date": "2026-09-23", "hrv": 41, "rhr": 59, "sleepH": 6.87, "sleepScore": 77}}, "legs": {"2026-09-30": {"date": "2026-09-30", "exercises": {"Back Extension (Weighted Hyperextension)": 3}, "load": 6, "method": "hevy-rpe-v1", "sets": 3}, "2026-09-29": {"date": "2026-09-29", "exercises": {"Bulgarian Split Squat (Dumbbell)": 3, "Dumbbell Step Up": 3, "Leg Extension (Machine)": 3, "Lying Leg Curl (Machine)": 3, "Seated Calf Raise": 3}, "load": 34, "method": "hevy-rpe-v1", "notes": "1 set had no RPE, scored at 7.5", "sets": 15}, "2026-10-16": {"date": "2026-10-16", "exercises": {"Lunge": 2}, "load": 7, "method": "hevy-rpe-v1", "sets": 2}, "2026-10-09": {"date": "2026-10-09", "exercises": {"Lunge": 2}, "load": 6, "method": "hevy-rpe-v1", "sets": 2}, "2026-09-22": {"date": "2026-09-22", "exercises": {"Bulgarian Split Squat (Dumbbell)": 3, "Dumbbell Step Up": 3, "Leg Extension (Machine)": 3, "Romanian Deadlift (Dumbbell)": 3, "Seated Calf Raise": 3}, "load": 27, "method": "hevy-rpe-v1", "sets": 15}, "2026-10-13": {"date": "2026-10-13", "exercises": {"Back Extension (Weighted Hyperextension)": 3, "Bulgarian Split Squat (Dumbbell)": 3, "Leg Extension (Machine)": 3, "Leg Press (Machine)": 4, "Seated Calf Raise": 3}, "load": 38, "method": "hevy-rpe-v1", "notes": "Hip Thrust (Machine) 3 sets not in the hevy-rpe-v1 exercise list, so unscored.", "sets": 16}, "2026-10-06": {"date": "2026-10-06", "exercises": {"Back Extension (Weighted Hyperextension)": 3, "Bulgarian Split Squat (Dumbbell)": 3, "Dumbbell Step Up": 3, "Leg Extension (Machine)": 3, "Leg Press (Machine)": 4, "Seated Calf Raise": 3}, "load": 48, "method": "hevy-rpe-v1", "sets": 19}, "2026-10-14": {"date": "2026-10-14", "exercises": {"Back Extension (Weighted Hyperextension)": 3}, "load": 4.5, "method": "hevy-rpe-v1", "sets": 3}}, "summary": {"asOf": "2026-10-18", "basis": "Week 4 so far (Mon–Sun morning, Sunday partial; Saturday sleep from Fitbit)", "headline": "Week 4 delivered the volume, but the weekend cost you: two rides on Saturday, and this morning's recovery is the worst of the week.", "items": [{"text": "Nothing new since Friday: bench 92×6 for four sets at RPE 8, leg press 160×10 ×4, pull-ups 13. All ahead of plan.", "title": "Lifting", "tone": "good"}, {"text": "Six training days and every Monday, Tuesday and Friday session done with no late starts. Four weeks running.", "title": "Consistency", "tone": "good"}, {"text": "117.9 km for the week, 63 of it outdoors on Saturday. The 52.5 km long ride beat the 45 km target but averaged 149 bpm against the 145 cap and ran 160–170 for the last 20 km. The extra 10.9 km at lunchtime was 157 bpm on 139 W. That is more than the plan asked for.", "title": "Cycling", "tone": "warn"}, {"text": "This morning: score 42, HRV 21, resting heart rate 63 and 10 minutes of REM after a midnight bedtime. HRV on the mornings that count towards the tripwire still averages 41, just under the 42 line, so it is not tripped but there is no margin.", "title": "Recovery", "tone": "bad"}, {"text": "Still 90.5 kg on the Tue–Thu mean, 1.8 kg above your 88.7 baseline, with no MFP data yet to explain it.", "title": "Bodyweight", "tone": "bad"}, {"text": "Today is a full rest day, and with HRV this low that is the right call. Tonight is the gating night for Monday's push: in bed by 22:30.", "title": "Next", "tone": "focus"}]}, "targets": {"avgSets": {"model": "const", "value": 20}, "bench": {"model": "schedule", "weeks": [{"kg": 81.25, "label": "80–82.5 × 5–6", "reps": 5, "w": 1}, {"kg": 85, "reps": 5, "w": 2}, {"kg": 87.5, "reps": 5, "w": 3}, {"kg": 90, "reps": 5, "w": 4}, {"kg": 92.5, "reps": 5, "w": 5}, {"kg": 95, "reps": 5, "w": 7}, {"kg": 97.5, "reps": 5, "w": 8}, {"kg": 100, "reps": 5, "w": 9}, {"kg": 100, "reps": 6, "w": 11}, {"kg": 102.5, "reps": 5, "w": 12}, {"kg": 105, "reps": 5, "w": 13}]}, "blockStart": "2026-09-21", "blockWeeks": 13, "bodyweight": {"maxLoss": 0.35, "minLoss": 0.1, "model": "band", "noise": 0.3, "start": 88.6}, "bss": {"from": {"kg": 10, "reps": 10, "w": 1}, "like": "bench", "model": "shape", "to": {"kg": 22.5, "reps": 10, "w": 13}}, "dangerWeeks": [5, 6], "daysLogged": {"model": "const", "value": 5}, "dbRow": {"from": {"kg": 25, "reps": 8, "w": 1}, "like": "bench", "model": "shape", "to": {"kg": 42.5, "reps": 8, "w": 13}}, "dbShoulder": {"from": {"kg": 20, "reps": 10, "w": 1}, "like": "bench", "model": "shape", "to": {"kg": 27.5, "reps": 8, "w": 13}}, "deloadWeeks": [6, 10], "dips": {"model": "schedule", "value": 15, "weeks": [{"label": "Baseline 17", "v": 17, "w": 2}, {"label": "19–20", "v": 19, "w": 5}, {"label": "21–22", "v": 21, "w": 9}, {"label": "22–25", "v": 22, "w": 13}]}, "feel": {"model": "none"}, "hackSquat": {"from": {"kg": 85, "reps": 8, "w": 1}, "like": "bench", "model": "shape", "to": {"kg": 100, "reps": 10, "w": 13}}, "hrv": {"model": "baseline_step", "step": 0.5}, "inclineDb": {"from": {"kg": 25, "reps": 9, "w": 1}, "like": "bench", "model": "shape", "to": {"kg": 37.5, "reps": 8, "w": 13}}, "kcal": {"model": "none"}, "kcalBurned": {"model": "none"}, "lateStarts": {"model": "const", "value": 1}, "legPress": {"model": "baseline_step", "step": 5.3}, "longRide": {"model": "schedule", "weeks": [{"label": "20 km re-entry", "v": 20, "w": 1}, {"v": 35, "w": 2}, {"v": 35, "w": 3}, {"v": 45, "w": 4}, {"v": 60, "w": 5}, {"v": 65, "w": 7}, {"v": 75, "w": 8}, {"v": 80, "w": 9}, {"v": 85, "w": 11}, {"label": "100 km attempt", "v": 100, "w": 12}]}, "lsit": {"model": "schedule", "weeks": [{"label": "Baseline 20 s", "v": 20, "w": 1}, {"label": "25 s", "v": 25, "w": 5}, {"label": "30 s", "v": 30, "w": 9}, {"label": "30–35 s", "v": 30, "w": 13}]}, "protein": {"floor": 160, "goal": 180, "model": "floorgoal"}, "pullups": {"model": "baseline_step", "step": 0.5}, "reviews": [{"d": "2026-10-04", "t": "Baseline photos + first weigh-in mean"}, {"d": "2026-11-01", "t": "Month 1: past Week 6?"}, {"d": "2026-11-29", "t": "Month 2: bench 100×5"}, {"d": "2026-12-20", "t": "Block close + next plan"}], "rhr": {"model": "baseline_step", "step": -0.25}, "rideKm": {"model": "schedule", "weeks": [{"label": "20 km re-entry", "v": 20, "w": 1}, {"v": 45, "w": 2}, {"v": 45, "w": 3}, {"v": 55, "w": 4}, {"v": 75, "w": 5}, {"label": "deload, Holland", "v": 30, "w": 6}, {"v": 80, "w": 7}, {"v": 90, "w": 8}, {"v": 95, "w": 9}, {"v": 70, "w": 10}, {"v": 100, "w": 11}, {"v": 110, "w": 12}, {"v": 70, "w": 13}]}, "runKm": {"cap": 8, "model": "from", "start": 3, "startWeek": 4, "step": 0.5}, "runPace": {"model": "none"}, "runPaused": true, "runs": {"cap": 1, "model": "from", "start": 1, "startWeek": 4, "step": 0}, "sessions": {"floor": 5, "plan": 6}, "sleepHours": {"model": "const", "value": 7.5}, "sleepScore": {"model": "const", "value": 80}, "steps": {"model": "const", "value": 10000}, "stress": {"model": "const", "value": 30}, "thuBed": {"model": "const", "value": 22.75}, "waist": {"model": "none"}, "wpu": {"model": "schedule", "weeks": [{"label": "+5 (1×8, 3×6)", "v": 5, "w": 1}, {"label": "+5 × 7", "v": 5, "w": 2}, {"label": "+5 × 8", "v": 5, "w": 3}, {"label": "+7.5 × 6", "v": 7.5, "w": 4}, {"label": "+7.5 × 8", "v": 7.5, "w": 5}, {"label": "+10 × 6", "v": 10, "w": 7}, {"label": "+10 × 8", "v": 10, "w": 8}, {"label": "+12.5 × 6", "v": 12.5, "w": 9}, {"label": "+12.5 × 8", "v": 12.5, "w": 11}, {"label": "+15 × 4", "v": 15, "w": 12}, {"label": "+15 × 5", "v": 15, "w": 13}]}}, "status": {}}</script>
+<script>
+(function(){
+const DAY=864e5;
+const e1=(kg,r)=>kg*(1+r/30);
+const DEFAULT_TARGETS={
+  blockStart:"2026-09-21", blockWeeks:13, deloadWeeks:[5,10], dangerWeeks:[5,6],
+  reviews:[{d:"2026-10-04",t:"Baseline photos + first weigh-in mean"},{d:"2026-11-01",t:"Month 1: past Week 6?"},{d:"2026-11-29",t:"Month 2: bench 100×5"},{d:"2026-12-20",t:"Block close + next plan"}],
+  sessions:{floor:5,plan:6},
+  lateStarts:{model:"const",value:1},
+  avgSets:{model:"const",value:20},
+  bench:{model:"schedule",weeks:[{w:1,kg:81.25,reps:5,label:"80–82.5 × 5–6"},{w:2,kg:85,reps:5},{w:3,kg:87.5,reps:5},{w:4,kg:90,reps:5},{w:6,kg:92.5,reps:5},{w:7,kg:95,reps:5},{w:8,kg:97.5,reps:5},{w:9,kg:100,reps:5},{w:11,kg:100,reps:6},{w:12,kg:102.5,reps:5},{w:13,kg:105,reps:5}]},
+  bss:{model:"shape",like:"bench",from:{w:1,kg:10,reps:8},to:{w:13,kg:22.5,reps:8}},
+  legPress:{model:"baseline_step",step:5.3},
+  stepUp:{model:"shape",like:"bench",from:{w:1,kg:8,reps:10},to:{w:13,kg:20,reps:12}},
+  inclineDb:{model:"shape",like:"bench",from:{w:1,kg:25,reps:9},to:{w:13,kg:37.5,reps:8}},
+  dbRow:{model:"shape",like:"bench",from:{w:1,kg:25,reps:8},to:{w:13,kg:42.5,reps:8}},
+  dbShoulder:{model:"shape",like:"bench",from:{w:1,kg:20,reps:10},to:{w:13,kg:27.5,reps:8}},
+  wpu:{model:"schedule",weeks:[{w:1,v:5,label:"+5 × 8"},{w:2,v:5,label:"+5"},{w:3,v:7.5,label:"+7.5"},{w:4,v:7.5,label:"+7.5"},{w:6,v:10,label:"+10"},{w:7,v:10,label:"+10"},{w:8,v:12.5,label:"+12.5"},{w:9,v:12.5,label:"+12.5"},{w:11,v:15,label:"+15"},{w:12,v:15,label:"+15"},{w:13,v:15,label:"+15 × 5"}]},
+  pullups:{model:"baseline_step",step:0.5},
+  dips:{model:"schedule",weeks:[{w:2,v:17,label:"Baseline 17"},{w:5,v:19,label:"19–20"},{w:9,v:21,label:"21–22"},{w:13,v:22,label:"22–25"}]},
+  lsit:{model:"schedule",weeks:[{w:1,v:20,label:"Baseline 20 s"},{w:5,v:25,label:"25 s"},{w:9,v:30,label:"30 s"},{w:13,v:30,label:"30–35 s"}]},
+  rideKm:{model:"schedule",weeks:[40,45,55,65,60,75,80,90,95,70,100,110,70].map((v,i)=>({w:i+1,v}))},
+  longRide:{model:"schedule",weeks:[40,45,45,55,null,60,65,75,80,null,85,100,null].map((v,i)=>({w:i+1,v,label:i===11?"100 km attempt":undefined})).filter(e=>e.v!=null)},
+  runKm:{model:"from",startWeek:4,start:3,step:0.5,cap:8},
+  runs:{model:"from",startWeek:4,start:1,step:0,cap:1},
+  runPace:{model:"none"},
+  bodyweight:{model:"band",start:88.6,noise:0.3,minLoss:0.1,maxLoss:0.35},
+  waist:{model:"none"},
+  thuBed:{model:"const",value:22.75},
+  sleepHours:{model:"const",value:7.5}, sleepScore:{model:"const",value:80},
+  rhr:{model:"baseline_step",step:-0.25}, hrv:{model:"baseline_step",step:0.5},
+  stress:{model:"const",value:30}, steps:{model:"const",value:10000},
+  feel:{model:"none"},
+  protein:{model:"floorgoal",floor:160,goal:180},
+  daysLogged:{model:"const",value:5},
+  kcal:{model:"none"},
+  kcalBurned:{model:"none"},
+  vo2max:{model:"none"}
+};
+function pace(v){if(v==null||isNaN(v))return "–";const r=Math.round(v);return Math.floor(r/60)+":"+String(r%60).padStart(2,"0");}
+function parsePace(str){if(!str)return null;str=String(str).trim();const m=str.match(/^(\d{1,2}):(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];const n=Number(str);return isNaN(n)?null:n;}
+function clock(v){if(v==null||isNaN(v))return "–";let mins=Math.round(v*60);const h=Math.floor(mins/60)%24,m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
+function parseClock(str){if(!str)return null;const m=String(str).trim().match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;let h=+m[1];if(h<12)h+=24;return h+ +m[2]/60;}
+function plus(v){if(v==null||isNaN(v))return "–";return v>0?"+"+fmt(v,1):v<0?"−"+fmt(-v,1):"0";}
+const G={load:"Consistency",strength:"Strength",cal:"Calisthenics",engine:"Cycling",run:"Running",fuel:"Nutrition",health:"Body & recovery"};
+const METRICS=[
+  {key:"sessions",label:"Training days",sub:"per week",unit:"",group:"load",dp:0,kind:"bar"},
+  {key:"lateStarts",label:"Late starts",sub:"sessions starting after 09:00",unit:"",group:"load",dp:0,kind:"bar",lower:true,tolAbs:0},
+  {key:"avgSets",label:"Working sets",sub:"per session, average",unit:"",group:"load",dp:0,tolAbs:2},
+  {key:"feel",label:"How you felt",sub:"Garmin post-activity rating, 1–10, automatic",unit:"",group:"load",dp:1,noTarget:true,manual:true,step:0.5,min:1,max:10,ph:"7"},
+  {key:"bench",label:"Bench press",sub:"barbell, top set e1RM",unit:"kg",group:"strength",dp:1,tolRel:0.02,deloadSkip:true},
+  {key:"legPress",label:"Leg press",sub:"machine, top set e1RM · baseline set Week 3",unit:"kg",group:"strength",dp:1,tolRel:0.03,deloadSkip:true},
+  {key:"bss",label:"Bulgarian split squat",sub:"per hand, top set e1RM",unit:"kg",group:"strength",dp:1,tolRel:0.03,deloadSkip:true},
+  {key:"stepUp",label:"DB step-up",sub:"per hand, top set e1RM",unit:"kg",group:"strength",dp:1,tolRel:0.03,deloadSkip:true},
+  {key:"inclineDb",label:"Incline DB press",sub:"per hand, top set e1RM",unit:"kg",group:"strength",dp:1,tolRel:0.03,deloadSkip:true},
+  {key:"dbRow",label:"DB row",sub:"per hand, top set e1RM",unit:"kg",group:"strength",dp:1,tolRel:0.03,deloadSkip:true},
+  {key:"dbShoulder",label:"DB shoulder press",sub:"per hand, top set e1RM",unit:"kg",group:"strength",dp:1,tolRel:0.03,deloadSkip:true},
+  {key:"wpu",label:"Weighted pull-up",sub:"added load on top set",unit:"kg",group:"cal",dp:1,tolAbs:0,deloadSkip:true,fmt:plus},
+  {key:"pullups",label:"Strict pull-ups",sub:"bodyweight, max set · test weeks",unit:"reps",group:"cal",dp:0,tolAbs:1,testOnly:true},
+  {key:"dips",label:"Dips",sub:"bodyweight max set · test weeks",unit:"reps",group:"cal",dp:0,tolAbs:1,testOnly:true},
+  {key:"lsit",label:"L-sit",sub:"best hold · test weeks",unit:"s",group:"cal",dp:0,tolAbs:2,testOnly:true},
+  {key:"rideKm",label:"Ride distance",sub:"per week",unit:"km",group:"engine",dp:0,tolRel:0.08},
+  {key:"longRide",label:"Long ride",sub:"Sunday, single ride",unit:"km",group:"engine",dp:0,tolRel:0.06},
+  {key:"runKm",label:"Run distance",sub:"one easy run, Friday",unit:"km",group:"run",dp:1,tolRel:0.1,capOver:true},
+  {key:"runs",label:"Runs",sub:"per week · one is the limit",unit:"",group:"run",dp:0,kind:"bar",tolAbs:0,capOver:true},
+  {key:"runPace",label:"Easy pace",sub:"average · no target set",unit:"/km",group:"run",dp:0,lower:true,fmt:pace,noTarget:true},
+  {key:"protein",label:"Protein",sub:"MFP, daily average",unit:"g",group:"fuel",dp:0},
+  {key:"daysLogged",label:"Days logged",sub:"in MFP · 5+ = reliable week",unit:"",group:"fuel",dp:0,kind:"bar",tolAbs:0},
+  {key:"kcal",label:"Calories in",sub:"MFP, daily average",unit:"kcal",group:"fuel",dp:0,noTarget:true},
+  {key:"kcalBurned",label:"Calories out",sub:"Garmin, daily average (estimate)",unit:"kcal",group:"fuel",dp:0,noTarget:true},
+  {key:"bodyweight",label:"Bodyweight",sub:"Tue–Thu mean · slow recomp, −0.1 to −0.35 kg/wk",unit:"kg",group:"health",dp:1,txt:{over:"Not dropping",behind:"Too fast"}},
+  {key:"waist",label:"Waist",sub:"from Hevy measurements, automatic",unit:"cm",group:"health",dp:1,lower:true,noTarget:true,manual:true,step:0.1,min:0,ph:"94.5"},
+  {key:"thuBed",label:"Thursday bedtime",sub:"the rule that protects Friday",unit:"",group:"health",dp:0,lower:true,tolAbs:0.25,fmt:clock},
+  {key:"sleepHours",label:"Sleep",sub:"nightly average",unit:"h",group:"health",dp:1,tolAbs:0.25},
+  {key:"sleepScore",label:"Sleep score",sub:"Garmin, nightly average",unit:"",group:"health",dp:0,tolAbs:3},
+  {key:"rhr",label:"Resting heart rate",sub:"weekly average",unit:"bpm",group:"health",dp:0,lower:true,tolAbs:1.5},
+  {key:"hrv",label:"Overnight HRV",sub:"weekly average",unit:"ms",group:"health",dp:0,tolAbs:3},
+  {key:"stress",label:"Stress",sub:"Garmin daily average",unit:"",group:"health",dp:0,lower:true,tolAbs:3},
+  {key:"steps",label:"Steps",sub:"daily average",unit:"",group:"health",dp:0,tolRel:0.05},
+  {key:"vo2max",label:"VO2 max",sub:"Garmin estimate, latest of the week",unit:"",group:"health",dp:1,noTarget:true},
+];
+const $=id=>document.getElementById(id);
+const state={targets:DEFAULT_TARGETS,weeks:{},rides:{},sample:true,sampleDismissed:false,db:null};
+function parseD(s){const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d);}
+function isoD(t){return new Date(t).toISOString().slice(0,10);}
+function fmtD(t){return new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"});}
+function weekStartOf(t){const d=new Date(t);const wd=(d.getUTCDay()+6)%7;return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-wd);}
+function idxOf(dateStr){return Math.round((parseD(dateStr)-parseD(state.targets.blockStart))/(7*DAY));}
+function dateOfIdx(i){return parseD(state.targets.blockStart)+i*7*DAY;}
+function fmt(v,dp){if(v==null||isNaN(v))return "–";return Number(v).toLocaleString("en-GB",{minimumFractionDigits:dp,maximumFractionDigits:dp});}
+function fv(m,v){return m.fmt?m.fmt(v):fmt(v,m.dp);}
+function num(v){return (v===""||v==null||isNaN(Number(v)))?null:Number(v);}
+function isDeload(i){return (state.targets.deloadWeeks||[]).includes(i+1);}
+function mergeTargets(t){const out=JSON.parse(JSON.stringify(DEFAULT_TARGETS));if(!t)return out;for(const k in t){if(t[k]&&typeof t[k]==="object"&&!Array.isArray(t[k]))out[k]=Object.assign(out[k]||{},t[k]);else out[k]=t[k];}return out;}
+function tstat(m,k){return (m.txt&&m.txt[k])||STATUS_TXT[k];}
+const STATUS_TXT={prog:"In progress",ahead:"Ahead",on:"On track",behind:"Behind",na:"No data",track:"Tracking",over:"Too much",deload:"Deload"};
+
+/* ---------- sample data ---------- */
+function sampleWeeks(){
+  const w={};
+  for(let i=0;i<7;i++){
+    const dl=isDeload(i);const j=i<4?i:i-1;
+    const row={
+      sessions:[5,6,5,5,5,6,6][i], lateStarts:[0,1,0,2,0,0,1][i], avgSets:[16,18,19,20,12,21,22][i],
+      bench:dl?e1(70,5):+(e1(80,6)+j*3.1+(i%2?0.6:-0.4)).toFixed(1),
+      bss:dl?11:+(e1(10,8)+j*1.2).toFixed(1),
+      stepUp:dl?9:+(e1(8,10)+j*1.1).toFixed(1),
+      inclineDb:dl?28:+(e1(25,9)+j*1.25).toFixed(1),
+      dbRow:dl?30:+(e1(25,8)+j*1.4).toFixed(1),
+      dbShoulder:dl?24:+(e1(20,10)+j*0.6).toFixed(1),
+      wpu:dl?0:[5,5,7.5,7.5,0,10,10][i],
+      rideKm:[42,45,50,66,58,72,80][i], longRide:[40,45,42,55,null,60,62][i],
+      bodyweight:+(88.6-0.2*i+(i%2?0.15:-0.05)).toFixed(1), waist:+(96-0.3*i+(i%2?0.2:0)).toFixed(1),
+      thuBed:[22.6,22.9,23.6,22.7,22.5,22.8,22.7][i],
+      sleepHours:+(6.9+0.08*i+(i%2?0.2:-0.1)).toFixed(1), sleepScore:[71,74,62,77,80,78,81][i],
+      rhr:58-Math.floor(i*0.4), hrv:41+Math.round(i*0.7), stress:34-Math.round(i*0.6), steps:8400+i*260,
+      feel:[6,7,5,7,7,8,7][i],
+      protein:[148,166,172,155,181,184,178][i], daysLogged:[6,7,7,5,7,6,7][i], kcal:[2650,2780,2820,2700,2600,2900,2850][i], kcalBurned:[2980,3150,3120,3240,2890,3310,3280][i]
+    };
+    if(i===0||i===4){row.pullups=[8,10][i/4];row.dips=[12,14][i/4];}
+    if(i>=3){const k=i-3;Object.assign(row,{runKm:+(3+0.5*k).toFixed(1),runs:1,runPace:372-4*k});}
+    Object.keys(row).forEach(k=>{if(row[k]==null)delete row[k];});
+    w[isoD(dateOfIdx(i))]=row;
+  }
+  return w;
+}
+
+/* ---------- target model ---------- */
+function entryVal(e){return e.v!=null?e.v:e1(e.kg,e.reps);}
+function entryLabel(e){return e.label||(e.kg!=null?`${fmt(e.kg,e.kg%1?1:0)} × ${e.reps}`:null);}
+// share of the W1→W13 gain the plan expects by week w, taken from the bench table (deloads hold, never go backwards)
+function shapeFrac(key,w){const t=state.targets[key];if(!t||!t.weeks)return null;const ws=t.weeks.slice().sort((a,b)=>a.w-b.w);const e=ws.find(x=>x.w===w);if(!e)return null;
+  const a=entryVal(ws[0]),z=entryVal(ws[ws.length-1]);let best=0;for(const x of ws){if(x.w>w)break;best=Math.max(best,(entryVal(x)-a)/(z-a));}return Math.min(1,best);}
+function series(m,weeks){
+  const T=state.targets;const n=Math.max(T.blockWeeks,1+Math.max(-1,...Object.keys(weeks).map(idxOf)));
+  const raw=new Array(n).fill(null);
+  for(const d in weeks){const i=idxOf(d);if(i>=0&&i<n){const v=num(weeks[d][m.key]);if(v!=null)raw[i]=v;}}
+  const actual=raw.map((v,i)=>m.deloadSkip&&isDeload(i)?null:v);
+  const t=T[m.key]||{};const target=new Array(n).fill(null),label=new Array(n).fill(null),lo=new Array(n).fill(null),hi=new Array(n).fill(null);
+  const i0=actual.findIndex(v=>v!=null);const b=i0>=0?actual[i0]:null;
+  for(let i=0;i<n;i++){
+    if(m.deloadSkip&&isDeload(i))continue;
+    const w=i+1;
+    if(m.key==="sessions"){target[i]=T.sessions.floor;continue;}
+    switch(t.model){
+      case "const":target[i]=t.value;break;
+      case "goal":target[i]=t.value;break;
+      case "schedule":{const e=(t.weeks||[]).find(e=>e.w===w);if(e){target[i]=entryVal(e);label[i]=entryLabel(e);}break;}
+      case "shape":{const f=shapeFrac(t.like||"bench",w);if(f!=null){const a=entryVal(t.from),z=entryVal(t.to);target[i]=a+(z-a)*f;
+          const r=t.to.reps;label[i]=w===t.from.w?entryLabel(t.from):w===t.to.w?entryLabel(t.to):`≈ ${fmt(Math.round(target[i]/(1+r/30)/2.5)*2.5,1).replace(/\.0$/,"")} × ${r}`;}break;}
+      case "line":{if(w>=t.from.w&&w<=t.to.w){const a=entryVal(t.from),z=entryVal(t.to);target[i]=a+(z-a)*(w-t.from.w)/(t.to.w-t.from.w);if(w===t.to.w)label[i]=entryLabel(t.to);if(w===t.from.w)label[i]=entryLabel(t.from);}break;}
+      case "from":{if(w>=t.startWeek)target[i]=Math.min(t.cap??Infinity,t.start+t.step*(w-t.startWeek));break;}
+      case "baseline_step":{if(b!=null&&i>=i0)target[i]=b+t.step*(i-i0);break;}
+      case "floorgoal":{lo[i]=t.floor;hi[i]=t.goal;target[i]=t.goal;label[i]=`${t.floor}–${t.goal} g`;break;}
+      case "band":{lo[i]=t.start-t.noise-t.maxLoss*i;hi[i]=t.start+t.noise-t.minLoss*i;target[i]=(lo[i]+hi[i])/2;label[i]=`${fmt(lo[i],1)}–${fmt(hi[i],1)}`;break;}
+    }
+  }
+  return {n,raw,actual,target,label,lo,hi,i0};
+}
+function weekInProg(i){const k=new Date(Date.parse("2026-09-21T00:00:00Z")+i*7*864e5).toISOString().slice(0,10);const w=(state.weeks||{})[k];return !!(w&&w.inProgress);}
+function status(m,s,i){const r=status0(m,s,i);return (r==="behind"&&weekInProg(i))?"prog":r;}
+function status0(m,s,i){
+  const a=s.raw[i],t=s.target[i];
+  if(a==null)return "na";
+  if(m.deloadSkip&&isDeload(i))return "deload";
+  if(m.noTarget)return "track";
+  const T=state.targets;
+  if(m.key==="sessions")return a>=7?"over":a>=T.sessions.plan?"ahead":a>=T.sessions.floor?"on":"behind";
+  if(t==null)return "na";
+  const model=(T[m.key]||{}).model;
+  if(model==="goal")return a>=t?"ahead":"track";
+  if(model==="floorgoal")return a>=s.hi[i]?"ahead":a>=s.lo[i]?"on":"behind";
+  if(model==="band")return a>s.hi[i]+0.05?"over":a<s.lo[i]?"behind":"on";
+  const tol=m.tolAbs!=null?m.tolAbs:Math.abs(t)*m.tolRel;
+  if(m.capOver&&a>t+tol)return "over";
+  const gap=m.lower?(t-a):(a-t);
+  return gap>tol?"ahead":gap>=-tol?"on":"behind";
+}
+function lastIdxOf(arr){for(let i=arr.length-1;i>=0;i--)if(arr[i]!=null)return i;return -1;}
+
+/* ---------- chart ---------- */
+const tip=$("tip");
+function niceTicks(lo,hi,count){const span=hi-lo||1;const raw=span/count;const mag=Math.pow(10,Math.floor(Math.log10(raw)));const step=[1,2,2.5,5,10].map(x=>x*mag).find(x=>x>=raw);const start=Math.floor(lo/step)*step;const ticks=[];for(let v=start;v<=hi+step*0.001;v+=step)ticks.push(+v.toFixed(6));return ticks;}
+function tickFmt(m,tv){if(m.fmt)return m.fmt(tv);return fmt(tv,Math.abs(tv)>=1000?0:(Number.isInteger(tv)?0:1));}
+const F='font-family="Barlow,system-ui,sans-serif"';
+function drawChart(el,m,s){
+  const T=state.targets;const W=Math.max(260,el.clientWidth),H=el.clientHeight||170;
+  const pad={l:m.fmt===clock?44:40,r:14,t:10,b:22};const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  const isBar=m.kind==="bar";
+  const vals=[...s.raw,...s.target,...s.lo,...s.hi].filter(v=>v!=null);
+  let lo,hi;
+  if(!vals.length){lo=0;hi=1;}else{lo=Math.min(...vals);hi=Math.max(...vals);
+    if(isBar){lo=0;hi=Math.max(hi,m.key==="sessions"||m.key==="daysLogged"?7:1)+0.5;}else{const mn=lo;const p=(hi-lo)*0.15||Math.abs(hi)*0.05||1;lo-=p;hi+=p;if(mn>=0&&lo<0)lo=0;}}
+  const ticks=niceTicks(lo,hi,3);lo=Math.min(lo,ticks[0]);hi=Math.max(hi,ticks[ticks.length-1]);
+  const colW=iw/s.n;
+  const x=i=>pad.l+(isBar?(i+0.5)*colW:(s.n===1?iw/2:i*iw/(s.n-1)));
+  const half=isBar?colW/2:iw/(s.n-1)/2;
+  const y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.label} by week, actual versus plan">`;
+  (T.deloadWeeks||[]).forEach(w=>{const i=w-1;if(i<s.n){const x0=Math.max(pad.l,x(i)-half),x1=Math.min(W-pad.r,x(i)+half);g+=`<rect x="${x0}" y="${pad.t}" width="${x1-x0}" height="${ih}" fill="var(--surface-2)"/><text x="${x(i)}" y="${pad.t+10}" text-anchor="middle" font-size="9" fill="var(--muted)" ${F}>D</text>`;}});
+  const tt=T[m.key]||{};const sw=tt.model==="from"?tt.startWeek:null;
+  if(sw&&sw>1){const xe=Math.min(W-pad.r,x(sw-1)-half);g+=`<rect x="${pad.l}" y="${pad.t}" width="${Math.max(0,xe-pad.l)}" height="${ih}" fill="var(--surface-2)"/><text x="${pad.l+6}" y="${pad.t+22}" font-size="10" fill="var(--ink-2)" ${F}>Not running yet</text>`;}
+  for(const tv of ticks){if(tv<lo-1e-9||tv>hi+1e-9)continue;g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--grid)"/><text x="${pad.l-6}" y="${y(tv)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" ${F} style="font-variant-numeric:tabular-nums">${tickFmt(m,tv)}</text>`;}
+  g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${pad.t+ih}" y2="${pad.t+ih}" stroke="var(--axis)"/>`;
+  const every=s.n>16?4:s.n>9?2:1;
+  for(let i=0;i<s.n;i+=every)g+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)" ${F}>W${i+1}</text>`;
+  const dash=`fill="none" stroke="var(--target)" stroke-width="1.5" stroke-dasharray="5 4"`;
+  if(isBar){
+    const bw=Math.max(4,Math.min(24,colW-6));
+    s.raw.forEach((v,i)=>{if(v==null)return;const st=status(m,s,i);const fill=st==="behind"?"var(--bad)":st==="over"?"var(--warn)":"var(--series)";const top=y(v),base=y(0);const h=Math.max(0,base-top);const r=Math.min(4,bw/2,h);
+      g+=`<path d="M${x(i)-bw/2},${base} V${top+r} Q${x(i)-bw/2},${top} ${x(i)-bw/2+r},${top} H${x(i)+bw/2-r} Q${x(i)+bw/2},${top} ${x(i)+bw/2},${top+r} V${base} Z" fill="${fill}"/>`;
+      if(v===0)g+=`<line x1="${x(i)-bw/2}" x2="${x(i)+bw/2}" y1="${base-1}" y2="${base-1}" stroke="var(--series)" stroke-width="2"/>`;});
+    if(m.key==="sessions"){const S=T.sessions;
+      g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(S.floor)}" y2="${y(S.floor)}" ${dash}/>`;
+      g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(S.plan)}" y2="${y(S.plan)}" fill="none" stroke="var(--target)" stroke-width="1" stroke-dasharray="2 4"/>`;
+      g+=`<text x="${W-pad.r}" y="${y(S.plan)-4}" text-anchor="end" font-size="10" fill="var(--ink-2)" ${F}>plan ${S.plan}</text>`;
+      g+=`<text x="${W-pad.r}" y="${y(7)-4}" text-anchor="end" font-size="10" fill="var(--warn-ink)" ${F}>7 = too many</text>`;
+    }else{let d="";s.target.forEach((v,i)=>{if(v==null)return;d+=`M${x(i)-colW/2},${y(v)} L${x(i)+colW/2},${y(v)} `;});if(d)g+=`<path d="${d}" ${dash}/>`;}
+  }else{
+    if(s.lo.some(v=>v!=null)){const pts=s.lo.map((v,i)=>v==null?null:i).filter(i=>i!=null);
+      g+=`<path d="M${pts.map(i=>x(i)+","+y(s.hi[i])).join(" L")} L${pts.slice().reverse().map(i=>x(i)+","+y(s.lo[i])).join(" L")} Z" fill="var(--surface-2)"/>`;
+      g+=`<polyline points="${pts.map(i=>x(i)+","+y(s.hi[i])).join(" ")}" ${dash}/><polyline points="${pts.map(i=>x(i)+","+y(s.lo[i])).join(" ")}" ${dash}/>`;
+    }else{
+      // target: break the dashed line across gaps (deloads)
+      let seg=[];const segs=[];s.target.forEach((v,i)=>{if(v==null){if(seg.length)segs.push(seg);seg=[];}else seg.push([x(i),y(v)]);});if(seg.length)segs.push(seg);
+      segs.forEach(sg=>{if(sg.length>1)g+=`<polyline points="${sg.map(p=>p.join(",")).join(" ")}" ${dash}/>`;else g+=`<line x1="${sg[0][0]-5}" x2="${sg[0][0]+5}" y1="${sg[0][1]}" y2="${sg[0][1]}" ${dash}/>`;});
+    }
+    const ap=s.actual.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);
+    if(ap.length>1){g+=`<path d="M${ap[0][0]},${pad.t+ih} ${ap.map(p=>"L"+p[0]+","+p[1]).join(" ")} L${ap[ap.length-1][0]},${pad.t+ih} Z" fill="var(--series-soft)"/>`;
+      g+=`<polyline points="${ap.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;}
+    ap.forEach((p,k)=>{g+=`<circle cx="${p[0]}" cy="${p[1]}" r="${k===ap.length-1?5:3}" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/>`;});
+    if(!ap.length){const has=s.target.some(v=>v!=null)||m.noTarget;g+=`<text x="${pad.l+iw/2}" y="${pad.t+ih/2}" text-anchor="middle" font-size="12" fill="var(--muted)" ${F}>${has?"No weeks logged yet":"Baseline sets on first logged week"}</text>`;}
+  }
+  g+=`<line class="xh" x1="0" x2="0" y1="${pad.t}" y2="${pad.t+ih}" stroke="var(--ink-2)" opacity="0"/><rect x="${pad.l}" y="0" width="${iw}" height="${H}" fill="transparent"/></svg>`;
+  el.innerHTML=g;
+  const svg=el.querySelector("svg"),xh=svg.querySelector(".xh");
+  const onMove=e=>{const r=svg.getBoundingClientRect();const px=(e.clientX-r.left)*(W/r.width);let best=0,bd=Infinity;for(let i=0;i<s.n;i++){const d=Math.abs(x(i)-px);if(d<bd){bd=d;best=i;}}
+    xh.setAttribute("x1",x(best));xh.setAttribute("x2",x(best));xh.setAttribute("opacity",".35");
+    const a=s.raw[best],st=status(m,s,best);const u=m.unit&&m.unit!=="/km"?" "+m.unit:(m.unit||"");
+    let tl=`<b>W${best+1} · w/c ${fmtD(dateOfIdx(best))}${isDeload(best)?" · deload":""}</b><br>Actual: ${fv(m,a)}${a!=null?u:""}`;
+    if(!m.noTarget){const lab=s.label[best];const t=s.target[best];tl+=`<br>Plan: ${lab?lab+(s.lo[best]==null&&t!=null&&lab.indexOf("×")>0?` (e1RM ${fmt(t,1)})`:""):(t!=null?fv(m,t)+u:"–")}`;}
+    if(a!=null)tl+=`<br>${tstat(m,st)}`;
+    tip.innerHTML=tl;tip.hidden=false;const tw=tip.offsetWidth;let lx=e.clientX+14;if(lx+tw>window.innerWidth-8)lx=e.clientX-tw-14;tip.style.left=lx+"px";tip.style.top=(e.clientY+14)+"px";};
+  svg.addEventListener("pointermove",onMove);svg.addEventListener("pointerdown",onMove);
+  svg.addEventListener("pointerleave",()=>{tip.hidden=true;xh.setAttribute("opacity","0");});
+}
+
+/* ---------- cycling page ---------- */
+// Efficiency factor: NP (or avg power) per beat of average heart rate. Short rides are too noisy to score.
+const EF_MIN_MIN=20;
+function rideEf(r){const p=r.npPower||r.avgPower;if(!p||!r.avgHr||!(r.movingMin>=EF_MIN_MIN))return null;return Math.round(p/r.avgHr*100)/100;}
+function ridesList(){return Object.keys(state.rides).sort().map(d=>{const r=Object.assign({date:d},state.rides[d]);r.ef=rideEf(r);return r;});}
+function drawRideEmpty(el,msg){el.innerHTML=`<svg viewBox="0 0 260 170" style="width:100%;height:100%"><text x="50%" y="50%" text-anchor="middle" font-size="12" fill="var(--muted)" ${F}>${msg}</text></svg>`;}
+function drawRideSeries(el,rides,key,opts){
+  opts=opts||{};const T=state.targets;const W=Math.max(260,el.clientWidth),H=el.clientHeight||170;
+  const pad={l:40,r:14,t:10,b:22};const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  const pts=rides.filter(r=>r[key]!=null&&r[key]!=="");
+  if(!pts.length){drawRideEmpty(el,opts.emptyMsg||"No rides logged yet");return;}
+  const vals=pts.map(p=>p[key]);let lo=Math.min(...vals),hi=Math.max(...vals);if(lo===hi){lo-=Math.abs(lo)*0.1||1;hi+=Math.abs(hi)*0.1||1;}
+  const m=(hi-lo)*0.15||1;lo-=m;hi+=m;if(lo>0&&lo<hi*0.3)lo=0;
+  const ticks=niceTicks(lo,hi,3);lo=Math.min(lo,ticks[0]);hi=Math.max(hi,ticks[ticks.length-1]);
+  const totalDays=T.blockWeeks*7;
+  const x=d=>pad.l+Math.max(0,Math.min(1,((parseD(d)-parseD(T.blockStart))/DAY)/totalDays))*iw;
+  const y=v=>pad.t+ih-(v-lo)/(hi-lo)*ih;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opts.label||key} per ride">`;
+  for(const tv of ticks){if(tv<lo-1e-9||tv>hi+1e-9)continue;g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--grid)"/><text x="${pad.l-6}" y="${y(tv)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" ${F}>${fmt(tv,Number.isInteger(tv)?0:(Math.abs(tv*10-Math.round(tv*10))>1e-6?2:1))}</text>`;}
+  g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${pad.t+ih}" y2="${pad.t+ih}" stroke="var(--axis)"/>`;
+  const every=T.blockWeeks>9?2:1;for(let w=1;w<=T.blockWeeks;w+=every)g+=`<text x="${x(isoD(dateOfIdx(w-1)))}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)" ${F}>W${w}</text>`;
+  [{filt:r=>!r.indoor,color:"var(--series)",tag:""},{filt:r=>r.indoor,color:"var(--warn)",tag:" (indoor)"}].forEach(gr=>{
+    const gp=pts.filter(gr.filt);
+    if(gp.length>1)g+=`<polyline points="${gp.map(p=>x(p.date)+","+y(p[key])).join(" ")}" fill="none" stroke="${gr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    gp.forEach((p,i)=>{g+=`<circle cx="${x(p.date)}" cy="${y(p[key])}" r="${i===gp.length-1?5:3}" fill="${gr.color}" stroke="var(--surface)" stroke-width="2"><title>${p.date}${gr.tag}: ${fmt(p[key],opts.dp||0)}${opts.unit||""}</title></circle>`;});
+  });
+  g+=`</svg>`;el.innerHTML=g;
+}
+function blockMonths(){
+  const T=state.targets;const s=new Date(parseD(T.blockStart)),e=new Date(dateOfIdx(T.blockWeeks-1));
+  const months=[];let y=s.getUTCFullYear(),mo=s.getUTCMonth();const eY=e.getUTCFullYear(),eM=e.getUTCMonth();
+  while(y<eY||(y===eY&&mo<=eM)){months.push(`${y}-${String(mo+1).padStart(2,"0")}`);mo++;if(mo>11){mo=0;y++;}}
+  return months;
+}
+function monthLabel(k){const [y,mo]=k.split("-").map(Number);return new Date(Date.UTC(y,mo-1,1)).toLocaleDateString("en-GB",{month:"short",year:"2-digit",timeZone:"UTC"});}
+function drawMonthlyRideBars(el,rides){
+  const T=state.targets;const months=blockMonths();const n=months.length;const W=Math.max(260,el.clientWidth),H=el.clientHeight||170;
+  const pad={l:40,r:14,t:10,b:22};const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  const out=new Array(n).fill(0),ind=new Array(n).fill(0),target=new Array(n).fill(0),hasTarget=new Array(n).fill(false);
+  rides.forEach(r=>{const k=r.date.slice(0,7);const i=months.indexOf(k);if(i>=0){if(r.indoor)ind[i]+=r.distanceKm||0;else out[i]+=r.distanceKm||0;}});
+  const rkT=state.targets.rideKm;
+  for(let w=1;w<=T.blockWeeks;w++){const e=(rkT.weeks||[]).find(x=>x.w===w);if(!e)continue;const k=isoD(dateOfIdx(w-1)).slice(0,7);const i=months.indexOf(k);if(i>=0){target[i]+=entryVal(e);hasTarget[i]=true;}}
+  const totals=out.map((v,i)=>v+ind[i]);
+  if(!totals.some(v=>v>0)&&!hasTarget.some(Boolean)){drawRideEmpty(el,"No rides logged yet");return;}
+  const hi=Math.max(1,...totals,...target.filter((v,i)=>hasTarget[i]))*1.15;
+  const colW=iw/n;const x=i=>pad.l+(i+0.5)*colW;const y=v=>pad.t+ih-(v/hi)*ih;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly cycling distance, outdoor vs indoor">`;
+  const ticks=niceTicks(0,hi,3);
+  for(const tv of ticks){if(tv>hi+1e-9)continue;g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--grid)"/><text x="${pad.l-6}" y="${y(tv)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" ${F}>${fmt(tv,0)}</text>`;}
+  g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${pad.t+ih}" y2="${pad.t+ih}" stroke="var(--axis)"/>`;
+  for(let i=0;i<n;i++)g+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)" ${F}>${monthLabel(months[i])}</text>`;
+  const bw=Math.max(8,Math.min(48,colW-10));
+  for(let i=0;i<n;i++){
+    if(out[i]>0)g+=`<rect x="${x(i)-bw/2}" y="${y(out[i])}" width="${bw}" height="${(pad.t+ih)-y(out[i])}" fill="var(--series)"><title>${monthLabel(months[i])} outdoor: ${fmt(out[i],1)} km</title></rect>`;
+    if(ind[i]>0)g+=`<rect x="${x(i)-bw/2}" y="${y(out[i]+ind[i])}" width="${bw}" height="${y(out[i])-y(out[i]+ind[i])}" fill="var(--warn)"><title>${monthLabel(months[i])} indoor: ${fmt(ind[i],1)} km</title></rect>`;
+    if(hasTarget[i])g+=`<line x1="${x(i)-bw/2}" x2="${x(i)+bw/2}" y1="${y(target[i])}" y2="${y(target[i])}" stroke="var(--target)" stroke-width="1.5" stroke-dasharray="4 3"><title>${monthLabel(months[i])} plan: ${fmt(target[i],0)} km</title></line>`;
+  }
+  g+=`</svg>`;el.innerHTML=g;
+}
+function drawCumulativeRideLine(el,rides){
+  const T=state.targets;const W=Math.max(260,el.clientWidth),H=el.clientHeight||170;
+  const pad={l:40,r:14,t:10,b:22};const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  if(!rides.length){drawRideEmpty(el,"No rides logged yet");return;}
+  const sorted=rides.slice().sort((a,b)=>a.date<b.date?-1:1);
+  let outSum=0,inSum=0;const outPts=[],inPts=[];
+  sorted.forEach(r=>{if(r.indoor){inSum+=r.distanceKm||0;inPts.push({date:r.date,val:inSum});}else{outSum+=r.distanceKm||0;outPts.push({date:r.date,val:outSum});}});
+  const hi=Math.max(1,outSum,inSum)*1.15;
+  const totalDays=T.blockWeeks*7;
+  const x=d=>pad.l+Math.max(0,Math.min(1,((parseD(d)-parseD(T.blockStart))/DAY)/totalDays))*iw;
+  const y=v=>pad.t+ih-(v/hi)*ih;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative cycling distance, block to date">`;
+  const ticks=niceTicks(0,hi,3);
+  for(const tv of ticks){if(tv>hi+1e-9)continue;g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--grid)"/><text x="${pad.l-6}" y="${y(tv)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" ${F}>${fmt(tv,0)}</text>`;}
+  g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${pad.t+ih}" y2="${pad.t+ih}" stroke="var(--axis)"/>`;
+  const every=T.blockWeeks>9?2:1;for(let w=1;w<=T.blockWeeks;w+=every)g+=`<text x="${x(isoD(dateOfIdx(w-1)))}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)" ${F}>W${w}</text>`;
+  [{pts:outPts,color:"var(--series)",lab:"Outdoor"},{pts:inPts,color:"var(--warn)",lab:"Indoor"}].forEach(gr=>{
+    if(gr.pts.length>1)g+=`<polyline points="${gr.pts.map(p=>x(p.date)+","+y(p.val)).join(" ")}" fill="none" stroke="${gr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    gr.pts.forEach((p,i)=>{g+=`<circle cx="${x(p.date)}" cy="${y(p.val)}" r="${i===gr.pts.length-1?5:3}" fill="${gr.color}" stroke="var(--surface)" stroke-width="2"><title>${gr.lab} through ${p.date}: ${fmt(p.val,1)} km</title></circle>`;});
+  });
+  g+=`</svg>`;el.innerHTML=g;
+}
+function drawWeeklyRideBars(el,rides){
+  const T=state.targets;const n=T.blockWeeks;const W=Math.max(260,el.clientWidth),H=el.clientHeight||170;
+  const pad={l:40,r:14,t:10,b:22};const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  const out=new Array(n).fill(0),ind=new Array(n).fill(0);
+  rides.forEach(r=>{const i=idxOf(r.date);if(i>=0&&i<n){if(r.indoor)ind[i]+=r.distanceKm||0;else out[i]+=r.distanceKm||0;}});
+  const rkT=state.targets.rideKm;const target=new Array(n).fill(null);
+  for(let i=0;i<n;i++){const w=i+1;const e=(rkT.weeks||[]).find(x=>x.w===w);if(e)target[i]=entryVal(e);}
+  const totals=out.map((v,i)=>v+ind[i]);
+  if(!totals.some(v=>v>0)&&!target.some(v=>v!=null)){drawRideEmpty(el,"No rides logged yet");return;}
+  const hi=Math.max(1,...totals,...target.filter(v=>v!=null))*1.15;
+  const colW=iw/n;const x=i=>pad.l+(i+0.5)*colW;const y=v=>pad.t+ih-(v/hi)*ih;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly cycling distance, outdoor vs indoor">`;
+  const ticks=niceTicks(0,hi,3);
+  for(const tv of ticks){if(tv>hi+1e-9)continue;g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(tv)}" y2="${y(tv)}" stroke="var(--grid)"/><text x="${pad.l-6}" y="${y(tv)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" ${F}>${fmt(tv,0)}</text>`;}
+  g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${pad.t+ih}" y2="${pad.t+ih}" stroke="var(--axis)"/>`;
+  const every=n>9?2:1;for(let i=0;i<n;i+=every)g+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)" ${F}>W${i+1}</text>`;
+  const bw=Math.max(4,Math.min(24,colW-6));
+  for(let i=0;i<n;i++){
+    if(out[i]>0)g+=`<rect x="${x(i)-bw/2}" y="${y(out[i])}" width="${bw}" height="${(pad.t+ih)-y(out[i])}" fill="var(--series)"><title>W${i+1} outdoor: ${fmt(out[i],1)} km</title></rect>`;
+    if(ind[i]>0)g+=`<rect x="${x(i)-bw/2}" y="${y(out[i]+ind[i])}" width="${bw}" height="${y(out[i])-y(out[i]+ind[i])}" fill="var(--warn)"><title>W${i+1} indoor: ${fmt(ind[i],1)} km</title></rect>`;
+    if(target[i]!=null)g+=`<line x1="${x(i)-bw/2}" x2="${x(i)+bw/2}" y1="${y(target[i])}" y2="${y(target[i])}" stroke="var(--target)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  }
+  g+=`</svg>`;el.innerHTML=g;
+}
+function rideTypeLabel(r){return r.indoor?"Indoor":"Outdoor";}
+function renderCycling(){
+  const rides=ridesList();
+  const dist=rides.reduce((s,r)=>s+(r.distanceKm||0),0);
+  const elev=rides.reduce((s,r)=>s+(r.elevM||0),0);
+  const withPower=rides.filter(r=>r.avgPower!=null);
+  const avgPower=withPower.length?withPower.reduce((s,r)=>s+r.avgPower,0)/withPower.length:null;
+  const outN=rides.filter(r=>!r.indoor).length,inN=rides.filter(r=>r.indoor).length;
+  $("cyc-kpis").innerHTML=[
+    {e:"Rides logged",v:rides.length?String(rides.length):"–",s:rides.length?`${outN} outdoor · ${inN} indoor`:"None yet"},
+    (()=>{const now=new Date();const mk=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+      const pm=new Date(now.getFullYear(),now.getMonth()-1,1);const pk=pm.getFullYear()+"-"+String(pm.getMonth()+1).padStart(2,"0");
+      const sumM=k=>rides.filter(r=>String(r.date).slice(0,7)===k).reduce((s,r)=>s+(r.distanceKm||0),0);
+      const outM=rides.filter(r=>String(r.date).slice(0,7)===mk&&!r.indoor).reduce((s,r)=>s+(r.distanceKm||0),0);
+      const cur=sumM(mk),prev=sumM(pk);const T=state.targets;let plan=0;
+      for(let w=1;w<=T.blockWeeks;w++){const e=(T.rideKm.weeks||[]).find(x=>x.w===w);if(e&&isoD(dateOfIdx(w-1)).slice(0,7)===mk)plan+=entryVal(e);}
+      const mName=now.toLocaleDateString("en-GB",{month:"long"});const pName=pm.toLocaleDateString("en-GB",{month:"long"});
+      return {e:`${mName} so far`,v:fmt(cur,1)+" km",s:`${fmt(outM,1)} outdoor · ${fmt(cur-outM,1)} indoor${plan?` · plan ${fmt(plan,0)} km`:""} · ${pName} ${fmt(prev,1)} km`};})(),
+    {e:"Distance, block to date",v:rides.length?fmt(dist,1)+" km":"–",s:"Sum of every logged ride"},
+    {e:"Elevation, block to date",v:rides.length?fmt(elev,0)+" m":"–",s:"Sum of every logged ride"},
+    {e:"Avg power",v:avgPower!=null?fmt(avgPower,0)+" W":"–",s:avgPower!=null?`${withPower.length} ride${withPower.length===1?"":"s"} with a power reading`:"Power pedals join Week 3"},
+    (()=>{const sc=rides.filter(r=>r.ef!=null);if(!sc.length)return {e:"Efficiency, latest",v:"–",s:"Needs a 20+ min ride with power and heart rate"};
+      const last=sc[sc.length-1];const same=sc.filter(r=>!!r.indoor===!!last.indoor);const first=same[0];const best=Math.max(...same.map(r=>r.ef));
+      return {e:"Efficiency, latest",v:fmt(last.ef,2),s:`${last.indoor?"Indoor":"Outdoor"}, ${fmtD(parseD(last.date))} · best ${last.indoor?"indoor":"outdoor"} ${fmt(best,2)}${same.length>1?` · first ${fmt(first.ef,2)}`:""}`};})()
+  ].map(k=>`<div class="kpi"><span class="eyebrow">${k.e}</span><span class="v num">${k.v}</span><span class="s">${k.s}</span></div>`).join("");
+  drawWeeklyRideBars($("cyc-chart-weekly"),rides);
+  drawMonthlyRideBars($("cyc-chart-monthly"),rides);
+  drawCumulativeRideLine($("cyc-chart-cumulative"),rides);
+  drawRideSeries($("cyc-chart-power"),rides,"avgPower",{label:"Avg power",unit:" W",dp:0,emptyMsg:"No power data yet — arrives with the pedals in Week 3"});
+  drawRideSeries($("cyc-chart-np"),rides,"npPower",{label:"Normalized power",unit:" W",dp:0,emptyMsg:"No power data yet — arrives with the pedals in Week 3"});
+  drawRideSeries($("cyc-chart-hr"),rides,"avgHr",{label:"Avg heart rate",unit:" bpm",dp:0});
+  drawRideSeries($("cyc-chart-ef"),rides,"ef",{label:"Efficiency",unit:" W/bpm",dp:2,emptyMsg:"No scored rides yet — needs power, heart rate and 20+ minutes"});
+  drawRideSeries($("cyc-chart-elev"),rides,"elevM",{label:"Elevation gain",unit:" m",dp:0});
+  drawRideSeries($("cyc-chart-speed"),rides,"avgSpeed",{label:"Avg speed",unit:" km/h",dp:1});
+  $("cyc-log-sub").textContent=rides.length?`${rides.length} ride${rides.length===1?"":"s"} logged`:"No rides logged yet";
+  $("cyc-logBody").innerHTML=rides.slice().reverse().map(r=>{const w=idxOf(r.date)+1;
+    return `<tr><td>${fmtD(parseD(r.date))}</td><td>W${w}</td><td>${rideTypeLabel(r)}</td><td>${r.distanceKm!=null?fmt(r.distanceKm,1)+" km":"–"}</td><td>${r.movingMin!=null?fmt(r.movingMin,0)+" min":"–"}</td><td>${r.elevM!=null?fmt(r.elevM,0)+" m":"–"}</td><td>${r.avgHr!=null?fmt(r.avgHr,0):"–"}</td><td>${r.maxHr!=null?fmt(r.maxHr,0):"–"}</td><td>${r.avgPower!=null?fmt(r.avgPower,0)+" W":"–"}</td><td>${r.npPower!=null?fmt(r.npPower,0)+" W":"–"}</td><td>${r.ef!=null?fmt(r.ef,2):"–"}</td><td>${r.avgSpeed!=null?fmt(r.avgSpeed,1)+" km/h":"–"}</td></tr>`;
+  }).join("")||`<tr><td colspan="12" style="text-align:center;color:var(--muted)">No rides logged yet</td></tr>`;
+}
+function switchPage(p){$("page-overview").hidden=p!=="overview";$("page-cycling").hidden=p!=="cycling";$("page-status").hidden=p!=="status";
+  $("tabOverview").classList.toggle("active",p==="overview");$("tabCycling").classList.toggle("active",p==="cycling");$("tabStatus").classList.toggle("active",p==="status");
+  if(p==="cycling")renderCycling();if(p==="status")renderStatus();}
+$("tabOverview").addEventListener("click",()=>switchPage("overview"));
+$("tabCycling").addEventListener("click",()=>switchPage("cycling"));
+$("tabStatus").addEventListener("click",()=>switchPage("status"));
+
+/* ---------- render ---------- */
+function activeWeeks(){return state.sample?sampleWeeks():state.weeks;}
+function unitOf(m,v){return v==null||!m.unit?"":(m.unit==="/km"?" /km":" "+m.unit);}
+function render(){
+  const T=state.targets;const weeks=activeWeeks();
+  $("sampleBanner").hidden=!state.sample;
+  const end=dateOfIdx(T.blockWeeks-1)+6*DAY;
+  $("blockDates").textContent=`${T.blockWeeks}-week block · ${fmtD(parseD(T.blockStart))} – ${fmtD(end)} ${new Date(end).getUTCFullYear()}`;
+  const logged=new Set(Object.keys(weeks).map(idxOf));
+  const nowIdx=Math.floor((weekStartOf(Date.now())-parseD(T.blockStart))/(7*DAY));
+  let pl="";for(let i=0;i<T.blockWeeks;i++){const dl=isDeload(i),dz=(T.dangerWeeks||[]).includes(i+1);pl+=`<div class="plate${logged.has(i)?" done":""}${i===nowIdx?" now":""}${dz?" danger":""}" title="W${i+1} · w/c ${fmtD(dateOfIdx(i))}${dl?" · deload":""}${logged.has(i)?" · logged":""}">${dl?"D":""}</div>`;}
+  $("plates").innerHTML=pl;
+  $("rackMeta").textContent=`${logged.size} of ${T.blockWeeks}${nowIdx>=0&&nowIdx<T.blockWeeks?` · now W${nowIdx+1}`:""}`;
+  const S={};METRICS.forEach(m=>S[m.key]=series(m,weeks));
+  const lastIdx=Math.max(-1,...[...logged].filter(i=>i>=0));
+  $("scoreWeek").textContent=lastIdx>=0?`Latest logged: W${lastIdx+1}, w/c ${fmtD(dateOfIdx(lastIdx))}${isDeload(lastIdx)?" (deload)":""}`:"No weeks logged yet";
+
+  let rows="";const counts={ahead:0,on:0,behind:0,na:0,track:0,over:0,deload:0,prog:0};let grp="";
+  METRICS.forEach(m=>{if(T.runPaused&&m.group==="run")return;const s=S[m.key];if(m.group!==grp){grp=m.group;rows+=`<tr class="grp"><td colspan="7">${G[grp]}</td></tr>`;}
+    const li=lastIdxOf(s.raw);const a=li>=0?s.raw[li]:null;const st=li>=0&&(li===lastIdx||m.testOnly)?status(m,s,li):"na";counts[st]++;
+    const ti=li>=0?li:Math.max(0,nowIdx);const t=s.target[ti];const lab=s.label[ti];
+    const pi=lastIdxOf(s.actual.slice(0,Math.max(0,li)));const prev=pi>=0?s.actual[pi]:null;const first=s.i0>=0?s.actual[s.i0]:null;
+    const aa=(m.deloadSkip&&isDeload(li))?null:a;
+    const gap=(aa!=null&&t!=null&&s.lo[ti]==null)?aa-t:null;
+    const dcls=d=>d==null||Math.abs(+d.toFixed(Math.max(m.dp,1)))<1e-9?"flat":((d>0)!==!!m.lower?"up":"down");
+    const sign=v=>{if(v==null)return "–";const r=+v.toFixed(Math.max(m.dp,m.fmt===clock?2:0));const mag=m.fmt===clock?Math.round(Math.abs(r)*60)+" min":(m.fmt===plus?fmt(Math.abs(r),1):fv(m,Math.abs(r)));return (r>0?"+":r<0?"−":"±")+mag;};
+    const dW=(aa!=null&&prev!=null)?aa-prev:null;const dS=(aa!=null&&first!=null&&li!==s.i0)?aa-first:null;
+    const pctS=(dS!=null&&first&&m.unit==="kg"&&m.key!=="wpu")?` (${dS>=0?"+":"−"}${Math.abs(dS/first*100).toFixed(1)}%)`:"";
+    const planTxt=m.noTarget?"–":m.key==="sessions"?`${T.sessions.floor}–${T.sessions.plan}`:lab?lab:(t!=null?fv(m,t)+unitOf(m,t):"–");
+    rows+=`<tr><td class="metric">${m.label}<small>${m.sub}</small></td><td>${fv(m,a)}${unitOf(m,a)}</td><td>${planTxt}</td><td class="delta ${dcls(gap)}">${sign(gap)}</td><td class="delta ${dcls(dW)}">${sign(dW)}</td><td class="delta ${dcls(dS)}">${sign(dS)}${pctS}</td><td><span class="pill ${st}">${tstat(m,st)}</span></td></tr>`;
+  });
+  $("scoreBody").innerHTML=rows;
+
+  const scored=counts.ahead+counts.on+counts.behind+counts.over;
+  const sess=S.sessions.raw.filter(v=>v!=null);const floorHit=sess.filter(v=>v>=T.sessions.floor&&v<7).length;
+  const bs=S.bench;const bli=lastIdxOf(bs.actual);
+  const today=Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
+  const nextSun=weekStartOf(today)+6*DAY;const sunIdx=Math.round((weekStartOf(today)-parseD(T.blockStart))/(7*DAY));
+  const nextMonthly=(T.reviews||[]).find(r=>parseD(r.d)>=today)||null;
+  const sameDay=nextMonthly&&parseD(nextMonthly.d)===nextSun;
+  $("kpis").innerHTML=[
+    {e:"On or ahead of plan",v:scored?`${counts.ahead+counts.on}/${scored}`:"–",s:scored?`${counts.ahead} ahead · ${counts.behind} behind${counts.over?` · ${counts.over} too much`:""}, latest week`:"Scores after the first logged week"},
+    {e:`Weeks at ${T.sessions.floor}+ days`,v:sess.length?`${floorHit}/${sess.length}`:"–",s:`Floor ${T.sessions.floor} · plan ${T.sessions.plan} · 7 is banned`},
+    {e:"Bench vs plan",v:bli>=0?`${fmt(bs.actual[bli],1)} kg`:"–",s:bli>=0?`e1RM, W${bli+1}. Plan ${bs.label[bli]||"–"} (e1RM ${fmt(bs.target[bli],1)})`:"Plan W13: 105 × 5 (e1RM ~122)"},
+    {e:"Next review",v:sunIdx<T.blockWeeks?fmtD(nextSun):"–",s:sunIdx<T.blockWeeks?`Sunday · Week ${sunIdx+1} review${sameDay?` + ${nextMonthly.t.toLowerCase()}`:""}${nextMonthly&&!sameDay?` · next monthly: ${fmtD(parseD(nextMonthly.d))}`:""}`:"Block complete"}
+  ].map(k=>`<div class="kpi"><span class="eyebrow">${k.e}</span><span class="v num">${k.v}</span><span class="s">${k.s}</span></div>`).join("");
+
+  // Percentiles: men 30-39. VO2: FRIEND registry treadmill VO2peak (Kaminsky et al., Mayo Clin Proc 2022). Bench: Cooper Institute 1RM/bodyweight norms (via ACE).
+  const NORMS={vo2:[[10,24.9],[20,29.8],[30,33.5],[40,37.0],[50,39.7],[60,43.4],[70,46.4],[80,50.0],[90,55.5]],bench:[[5,0.65],[20,0.78],[40,0.88],[60,0.98],[80,1.12],[95,1.35]]};
+  const pctOf=(v,pts)=>{if(v<=pts[0][1])return{p:pts[0][0],edge:"below"};const L=pts[pts.length-1];if(v>=L[1])return{p:L[0],edge:"above"};for(let k=1;k<pts.length;k++){const [p1,v1]=pts[k-1],[p2,v2]=pts[k];if(v<=v2)return{p:p1+(p2-p1)*(v-v1)/(v2-v1)};}return{p:L[0]};};
+  const topTxt=r=>r.edge==="above"?`Top ${100-r.p}% or better`:r.edge==="below"?`Bottom ${r.p}%`:`Top ${Math.max(1,Math.round(100-r.p))}%`;
+  const latest=k=>{const s=S[k];const i=lastIdxOf(s.raw);return i>=0?{v:s.raw[i],i}:null;};
+  const vo=latest("vo2max"),be=latest("bench"),bw=latest("bodyweight");
+  const tiles=[];
+  if(vo){const r=pctOf(vo.v,NORMS.vo2);tiles.push(["Fitness",topTxt(r),`VO2 max ${fmt(vo.v,1)} (Garmin estimate, W${vo.i+1}) · ${Math.round(r.p)}th percentile · FRIEND registry norms`]);}else tiles.push(["Fitness","–","Needs a VO2 max reading from the weekly pull"]);
+  if(be&&bw){const ratio=be.v/bw.v;const r=pctOf(ratio,NORMS.bench);tiles.push(["Strength",topTxt(r),`Bench ${fmt(be.v,1)} kg e1RM ÷ ${fmt(bw.v,1)} kg = ${ratio.toFixed(2)}× bodyweight · ${Math.round(r.p)}th percentile · Cooper Institute norms`]);}else tiles.push(["Strength","–","Needs a bench top set and a weigh-in"]);
+  $("stand").innerHTML=tiles.map(([a,v,s])=>`<div class="hstat"><span class="eyebrow">${a}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`).join("");
+  const rp=!!T.runPaused;$("runSection").style.display=rp?"none":"";["tfRunT","tfRunF"].forEach(id=>$(id).style.display=rp?"none":"");document.querySelectorAll("#lf-groups .run-g").forEach(e=>e.style.display=rp?"none":"");
+  const rw=T.runKm.startWeek;$("runSub").textContent=`One easy run on Friday from W${rw} (w/c ${fmtD(dateOfIdx(rw-1))}), once the calf raise and hop tests pass`;
+  $("hstats").innerHTML=[["sleepHours","Avg sleep","h",1],["rhr","Avg resting HR","bpm",0],["hrv","Avg overnight HRV","ms",0],["sleepScore","Avg sleep score","",0]].map(([k,lab,u,dp])=>{const vals=S[k].actual.filter(v=>v!=null);const avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;const ch=vals.length>1?vals[vals.length-1]-vals[0]:null;const m=METRICS.find(x=>x.key===k);const good=ch==null?"":((ch>0)!==!!m.lower?"up":"down");
+    return `<div class="hstat"><span class="eyebrow">${lab} · block</span><span class="v num">${fmt(avg,dp)}${avg!=null&&u?` <small style="font-size:14px;color:var(--muted)">${u}</small>`:""}</span><span class="s">${ch==null?"Needs two weeks of data":`<span class="delta ${Math.abs(ch)<1e-9?"flat":good}">${ch>0?"+":ch<0?"−":"±"}${fmt(Math.abs(ch),dp)}</span> since first week`}</span></div>`;}).join("");
+
+  Object.keys(G).forEach(gk=>{const host=$("g-"+gk);host.innerHTML="";
+    METRICS.filter(m=>m.group===gk).forEach(m=>{const s=S[m.key];const li=lastIdxOf(s.raw);const a=li>=0?s.raw[li]:null;const st=li>=0?status(m,s,li):"na";
+      const c=document.createElement("div");c.className="card";
+      const leg=m.noTarget?"":m.key==="sessions"?`Floor ${T.sessions.floor} / plan ${T.sessions.plan}`:(s.lo.some(v=>v!=null)?((state.targets[m.key]||{}).model==="floorgoal"?`Floor ${state.targets[m.key].floor} g / aim ${state.targets[m.key].goal} g`:"Target band"):"Plan");
+      c.innerHTML=`<div class="card-top"><div><h3>${m.label}</h3><div class="card-sub">${m.sub}${m.lower&&!m.fmt?" · lower is better":""}${m.fmt===clock?" · earlier is better":""}</div></div><div><div class="big num">${fv(m,a)}<small>${a!=null&&m.unit?m.unit:""}</small></div><div style="text-align:right;margin-top:4px"><span class="pill ${st}">${tstat(m,st)}</span></div></div></div><div class="chart"></div><div class="legend"><span><i></i>Actual</span>${leg?`<span><i class="t"></i>${leg}</span>`:""}</div>`;
+      if(false){const wk=currentWeekIdx();const f=document.createElement("form");f.className="qadd";f.noValidate=true;
+        const opts=[wk,wk-1].filter(i=>i>=0).map(i=>`<option value="${i}">W${i+1}</option>`).join("");
+        f.innerHTML=`<select id="qw-${m.key}" aria-label="Week" style="width:auto">${opts}</select><input id="qa-${m.key}" type="number" step="${m.step||0.1}" ${m.min!=null?`min="${m.min}"`:""} ${m.max!=null?`max="${m.max}"`:""} inputmode="decimal" placeholder="${m.ph||""}" aria-label="${m.label}${m.unit?" ("+m.unit+")":""}"><button type="submit">Add</button><span class="msg"></span>`;
+        const sel=f.querySelector("select"),inp=f.querySelector("input");
+        const fill=()=>{const cur=state.weeks[isoD(dateOfIdx(+sel.value))];inp.value=cur&&cur[m.key]!=null?cur[m.key]:"";};fill();sel.addEventListener("change",fill);
+        f.addEventListener("submit",ev=>{ev.preventDefault();quickAdd(m,f,+sel.value);});c.appendChild(f);}
+      host.appendChild(c);const ch=c.querySelector(".chart");ch._m=m;ch._s=s;drawChart(ch,m,s);});
+  });
+
+  const notes=Object.keys(weeks).sort().reverse().filter(d=>weeks[d].notes).map(d=>`<div><b>W${idxOf(d)+1} · ${fmtD(parseD(d))}</b>${escapeHtml(weeks[d].notes)}</div>`);
+  $("notesSec").hidden=!notes.length;$("notesList").innerHTML=notes.join("");
+  fillWeekSelect();
+}
+// Written by Claude with each update (config/summary): {headline, asOf, basis, items:[{tone:good|bad|warn|focus, title, text}]}
+function renderSummary(){const s=state.summary;const sec=$("sumSec");if(!s||!s.headline){sec.hidden=true;return;}sec.hidden=false;
+  $("sumHead").textContent=s.headline;
+  $("sumMeta").textContent=`Written ${s.asOf?fmtD(parseD(s.asOf)):""}${s.basis?" · "+s.basis:""}`;
+  $("sumBody").innerHTML=(s.items||[]).map(it=>`<div class="sum-item ${escapeHtml(it.tone||"")}"><span class="sum-tag">${escapeHtml(it.title||"")}</span><p>${escapeHtml(it.text||"")}</p></div>`).join("");}
+function currentWeekIdx(){const T=state.targets;return Math.max(0,Math.min(T.blockWeeks-1,Math.floor((weekStartOf(Date.now())-parseD(T.blockStart))/(7*DAY))));}
+async function quickAdd(m,f,wkIdx){const msg=f.querySelector(".msg");const v=num(f.querySelector("input").value);
+  if(v==null){msg.textContent="Enter a number.";return;}
+  if(!state.db){msg.textContent="Saving isn't available in this view.";return;}
+  if((m.min!=null&&v<m.min)||(m.max!=null&&v>m.max)){msg.textContent=`Enter ${m.min}–${m.max}.`;return;}
+  const d=isoD(dateOfIdx(wkIdx!=null?wkIdx:currentWeekIdx()));const btn=f.querySelector("button");btn.disabled=true;msg.textContent="Saving…";
+  try{const ref=state.db.doc("weeks/"+d);const snap=await ref.get();const body=Object.assign({},snap.exists?snap.data():{},{week:d,[m.key]:v});await ref.set(body);msg.textContent="Added.";}
+  catch(err){msg.textContent=err&&err.code==="invalid_argument"?"You don't have permission to edit this board.":"Couldn't save. Try again in a moment.";}
+  btn.disabled=false;}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+let rt;new ResizeObserver(()=>{clearTimeout(rt);rt=setTimeout(()=>document.querySelectorAll(".chart").forEach(ch=>ch._m&&drawChart(ch,ch._m,ch._s)),120);}).observe(document.body);
+
+/* ---------- log form ---------- */
+const TEXT_FIELDS={runPace:{parse:parsePace,show:pace,ph:"6:10"},thuBed:{parse:parseClock,show:clock,ph:"22:40"}};
+(function buildLogFields(){let h="";Object.keys(G).forEach(gk=>{h+=`<div class="fieldset-t${gk==="run"?" run-g":""}">${G[gk]}</div><div class="fields${gk==="run"?" run-g":""}">`;
+  METRICS.filter(m=>m.group===gk).forEach(m=>{const tf=TEXT_FIELDS[m.key];const lab=m.label+(m.unit&&m.unit!=="/km"&&m.unit!=="reps"?` (${m.unit})`:m.unit==="/km"?" (m:ss /km)":"");
+    h+=`<label class="f" for="lf-${m.key}">${lab}<input id="lf-${m.key}" ${tf?`type="text" inputmode="numeric" placeholder="${tf.ph}"`:`type="number" step="any"`}></label>`;});
+  h+=`</div>`;});$("lf-groups").innerHTML=h;})();
+function fillWeekSelect(){const sel=$("lf-week");const cur=sel.value;const T=state.targets;let o="";
+  const nowIdx=Math.floor((weekStartOf(Date.now())-parseD(T.blockStart))/(7*DAY));const n=Math.max(T.blockWeeks,nowIdx+1);
+  for(let i=0;i<n;i++){const d=isoD(dateOfIdx(i));o+=`<option value="${d}">W${i+1} · w/c ${fmtD(dateOfIdx(i))}${isDeload(i)?" · deload":""}${state.weeks[d]?" · logged":""}</option>`;}
+  sel.innerHTML=o;sel.value=cur||isoD(dateOfIdx(Math.min(Math.max(nowIdx,0),n-1)));if(!sel.value)sel.selectedIndex=0;loadWeekIntoForm();}
+function loadWeekIntoForm(){const w=state.weeks[$("lf-week").value]||{};METRICS.forEach(m=>{const tf=TEXT_FIELDS[m.key];$("lf-"+m.key).value=w[m.key]==null?"":(tf?tf.show(w[m.key]):w[m.key]);});$("lf-notes").value=w.notes||"";}
+$("lf-week").addEventListener("change",loadWeekIntoForm);
+$("logForm").addEventListener("submit",async e=>{e.preventDefault();const msg=$("lf-msg");
+  if(!state.db){msg.textContent="Saving isn't available in this view.";return;}
+  const d=$("lf-week").value;const body={week:d};
+  METRICS.forEach(m=>{const tf=TEXT_FIELDS[m.key];const raw=$("lf-"+m.key).value;const v=tf?tf.parse(raw):num(raw);if(v!=null)body[m.key]=v;});
+  const n=$("lf-notes").value.trim();if(n)body.notes=n;
+  $("lf-save").disabled=true;msg.textContent="Saving…";
+  try{await state.db.doc("weeks/"+d).set(body);msg.textContent="Saved.";}catch(err){msg.textContent=err&&err.code==="invalid_argument"?"You don't have permission to edit this board.":"Couldn't save. Try again in a moment.";}
+  $("lf-save").disabled=false;});
+
+/* ---------- targets form ---------- */
+function loadTargetsIntoForm(){const T=state.targets;
+  $("tf-floor").value=T.sessions.floor;$("tf-plan").value=T.sessions.plan;$("tf-sets").value=T.avgSets.value;
+  $("tf-runStart").value=T.runKm.startWeek;$("tf-runKm").value=T.runKm.start;$("tf-runStep").value=T.runKm.step;$("tf-runCap").value=T.runKm.cap;
+  $("tf-bwMin").value=T.bodyweight.minLoss;$("tf-bwMax").value=T.bodyweight.maxLoss;$("tf-bed").value=clock(T.thuBed.value);
+  $("tf-sleep").value=T.sleepHours.value;$("tf-sleepScore").value=T.sleepScore.value;$("tf-steps").value=T.steps.value;$("tf-stress").value=T.stress.value;
+  $("tf-protFloor").value=T.protein.floor;$("tf-protGoal").value=T.protein.goal;$("tf-days").value=T.daysLogged.value;}
+$("tgtForm").addEventListener("submit",async e=>{e.preventDefault();const msg=$("tf-msg");
+  if(!state.db){msg.textContent="Saving isn't available in this view.";return;}
+  const T=JSON.parse(JSON.stringify(state.targets));const g=id=>num($(id).value);
+  if(g("tf-floor")!=null)T.sessions.floor=g("tf-floor");if(g("tf-plan")!=null)T.sessions.plan=g("tf-plan");if(g("tf-sets")!=null)T.avgSets.value=g("tf-sets");
+  if(g("tf-runStart")!=null){T.runKm.startWeek=g("tf-runStart");T.runs.startWeek=g("tf-runStart");}
+  if(g("tf-runKm")!=null)T.runKm.start=g("tf-runKm");if(g("tf-runStep")!=null)T.runKm.step=g("tf-runStep");if(g("tf-runCap")!=null)T.runKm.cap=g("tf-runCap");
+  if(g("tf-bwMin")!=null)T.bodyweight.minLoss=g("tf-bwMin");if(g("tf-bwMax")!=null)T.bodyweight.maxLoss=g("tf-bwMax");const bed=parseClock($("tf-bed").value);if(bed!=null)T.thuBed.value=bed;
+  if(g("tf-sleep")!=null)T.sleepHours.value=g("tf-sleep");if(g("tf-sleepScore")!=null)T.sleepScore.value=g("tf-sleepScore");
+  if(g("tf-protFloor")!=null)T.protein.floor=g("tf-protFloor");if(g("tf-protGoal")!=null)T.protein.goal=g("tf-protGoal");if(g("tf-days")!=null)T.daysLogged.value=g("tf-days");
+  if(g("tf-steps")!=null)T.steps.value=g("tf-steps");if(g("tf-stress")!=null)T.stress.value=g("tf-stress");
+  $("tf-save").disabled=true;msg.textContent="Saving…";
+  try{await state.db.doc("config/targets").set(T);msg.textContent="Saved.";}catch(err){msg.textContent=err&&err.code==="invalid_argument"?"You don't have permission to edit targets.":"Couldn't save. Try again in a moment.";}
+  $("tf-save").disabled=false;});
+$("sampleToggle").addEventListener("click",()=>{state.sampleDismissed=true;state.sample=false;render();});
+
+/* ---------- training status ---------- */
+const SDAY=864e5;
+const ST_DEF={ftp:185,indoorFactor:0.85,lthr:165,legLoad:45,legStart:"2026-09-22",legSkip:[],seed:20,start:"2026-09-21"};
+state.status=Object.assign({},ST_DEF);
+function isoU(t){const d=new Date(t);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");}
+function todayISO(){const n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");}
+function rideLoad(r,c){const min=r.movingMin||0;if(!min)return null;
+  const ftp=r.indoor?c.ftp*c.indoorFactor:c.ftp;
+  if(r.npPower){const IF=r.npPower/ftp;return{load:min/60*IF*IF*100,IF,method:r.indoor?"Power (indoor FTP)":"Power"};}
+  if(r.avgHr){const x=r.avgHr/c.lthr;return{load:min/60*x*x*100,IF:null,method:"Heart rate"};}
+  return null;}
+function statusModel(){
+  const c=state.status;const t0=Date.parse(c.start+"T00:00:00Z"),tEnd=Date.parse(todayISO()+"T00:00:00Z");
+  const loads={};const rows=[];
+  ridesList().forEach(r=>{const L=rideLoad(r,c);if(!L)return;const d=String(r.date).slice(0,10);loads[d]=(loads[d]||0)+L.load;rows.push(Object.assign({},r,L,{d,kind:"ride"}));});
+  // Real leg load from Hevy (legs collection, written at each Sunday upload); the fixed Tuesday estimate only fills weeks with no Hevy data yet.
+  const legDocs=Object.keys(state.legs||{}).map(k=>Object.assign({},state.legs[k],{d:String(state.legs[k].date||k).slice(0,10)})).filter(l=>l.load>0);
+  const wkOf=d=>{const t=Date.parse(d+"T00:00:00Z");const wd=(new Date(t).getUTCDay()+6)%7;return isoU(t-wd*SDAY);};
+  const realWeeks=new Set(legDocs.map(l=>wkOf(l.d)));
+  legDocs.forEach(l=>{loads[l.d]=(loads[l.d]||0)+l.load;rows.push({d:l.d,kind:"legs",load:l.load,real:true,method:`Hevy: ${l.sets} leg set${l.sets===1?"":"s"}`});});
+  const skip=new Set(c.legSkip||[]);
+  for(let t=Date.parse(c.legStart+"T00:00:00Z");t<=tEnd;t+=7*SDAY){const d=isoU(t);if(!skip.has(d)&&c.legLoad>0&&!realWeeks.has(wkOf(d))){loads[d]=(loads[d]||0)+c.legLoad;rows.push({d,kind:"legs",load:c.legLoad,method:"Estimate until Sunday's upload"});}}
+  let ctl=c.seed,atl=c.seed;const s=[];
+  for(let t=t0;t<=tEnd;t+=SDAY){const d=isoU(t);const L=loads[d]||0;const tsb=ctl-atl;ctl+=(L-ctl)/42;atl+=(L-atl)/7;s.push({t,d,load:L,ctl,atl,tsb});}
+  rows.sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+  return{s,rows};}
+function statusLabel(s,rows){const n=s.length,cur=s[n-1],wk=s[Math.max(0,n-8)];const ramp=cur.ctl-wk.ctl,tsb=cur.tsb;
+  const last=rows.find(r=>r.kind==="ride");const gap=last?(Date.parse(todayISO()+"T00:00:00Z")-Date.parse(last.d+"T00:00:00Z"))/SDAY:99;
+  let k,cls,why;
+  if(gap>10){k="Detraining";cls="behind";why="No ride logged for over 10 days.";}
+  else if(tsb<-30){k="Overreaching";cls="behind";why="Fatigue is well above fitness. Take an easy day or two before the next hard session.";}
+  else if(ramp>7){k="Ramping fast";cls="over";why="Fitness is climbing more than 7 points a week, faster than is usually sustainable. Hold volume steady for a week.";}
+  else if(tsb<-10&&ramp<1){k="Strained";cls="over";why="Carrying fatigue without fitness rising. Check sleep and fuelling.";}
+  else if(ramp>=1){k="Productive";cls="ahead";why="Fitness is rising at a sustainable rate.";}
+  else if(tsb>15&&ramp<0){k="Recovering";cls="on";why="Fresh, but fitness is starting to slip. Fine in a deload week; otherwise add load.";}
+  else if(ramp<-1){k="Losing fitness";cls="behind";why="Load has dropped below what you're used to.";}
+  else{k="Maintaining";cls="on";why="Load is steady: fitness holding, not building.";}
+  return{k,cls,why,ramp,tsb,cur};}
+function readiness(cur,rows){const today=todayISO();const y=isoU(Date.parse(today+"T00:00:00Z")-SDAY);
+  const legs=rows.some(r=>r.kind==="legs"&&r.load>=15&&(r.d===today||r.d===y));const f=cur.tsb;
+  if(f<-20)return{v:"Easy only",cls:"behind",s:"Form "+fmt(f,0)+". A hard session now will feel maximal at low watts."};
+  if(legs)return{v:"Legs tired",cls:"over",s:"Hard leg session today or yesterday (15+ leg points). Expect intervals to feel harder and power to be lower."};
+  if(f<-10)return{v:"OK, expect it hard",cls:"over",s:"Form "+fmt(f,0)+". Fine for intervals, but hold the target, not more."};
+  return{v:"Good to go",cls:"ahead",s:"Form "+fmt(f,0)+". Good day for the key session."};}
+function drawStatusChart(el,s){const W=el.clientWidth||600,H=el.clientHeight||230,pl=34,pr=8,pt=8,pb=22;
+  if(!s.length){el.innerHTML="";return;}
+  const vals=s.flatMap(p=>[p.ctl,p.atl,p.tsb]);let lo=Math.min(0,...vals),hi=Math.max(...vals);lo=Math.floor((lo-5)/10)*10;hi=Math.ceil((hi+5)/10)*10;
+  const x=i=>pl+(W-pl-pr)*(s.length===1?0.5:i/(s.length-1)),y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
+  let g="";for(let v=lo;v<=hi;v+=10){g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;}
+  const bw=Math.max(1,(W-pl-pr)/s.length*0.7);
+  const bars=s.map((p,i)=>{const y0=y(0),y1=y(p.tsb);return `<rect x="${x(i)-bw/2}" y="${Math.min(y0,y1)}" width="${bw}" height="${Math.abs(y1-y0)}" fill="${p.tsb>=0?"var(--good)":"var(--bad)"}" opacity=".35"/>`;}).join("");
+  const line=(k,c)=>`<polyline fill="none" stroke="${c}" stroke-width="2" points="${s.map((p,i)=>x(i)+","+y(p[k])).join(" ")}"/>`;
+  const lab=(i)=>`<text x="${x(i)}" y="${H-6}" text-anchor="${i===0?"start":"end"}" font-size="11" fill="var(--muted)">${fmtD(s[i].t)}</text>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${g}<line x1="${pl}" x2="${W-pr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>${bars}${line("ctl","var(--series)")}${line("atl","var(--warn)")}${lab(0)}${lab(s.length-1)}</svg>`;
+  el._st=s;}
+function renderStatus(){const {s,rows}=statusModel();const L=statusLabel(s,rows);const R=readiness(L.cur,rows);
+  const kpi=(lab,v,sub,cls)=>`<div class="kpi"><span class="s">${lab}</span><div class="v">${v}</div>${cls?`<span><span class="pill ${cls}">${sub}</span></span>`:`<span class="s">${sub}</span>`}</div>`;
+  $("st-kpis").innerHTML=
+    `<div class="kpi" style="grid-column:1/-1"><span class="s">Cycling status</span><div class="v">${L.k}</div><span><span class="pill ${L.cls}">${L.k}</span></span><span class="s">${L.why}</span></div>`+
+    kpi("Fitness",fmt(L.cur.ctl,0),"6-week average daily load")+
+    kpi("Fatigue",fmt(L.cur.atl,0),"7-day average daily load")+
+    kpi("Form",(L.tsb>0?"+":"")+fmt(L.tsb,0),"Fitness minus fatigue. −10 to −30 is normal while building")+
+    kpi("Ramp",(L.ramp>0?"+":"")+fmt(L.ramp,1),"Fitness change over 7 days. Aim +2 to +6")+
+    `<div class="kpi"><span class="s">Ready for a hard ride today?</span><div class="v">${R.v}</div><span class="s">${R.s}</span></div>`;
+  drawStatusChart($("st-chart"),s);
+  const c=state.status,cut=Date.parse(todayISO()+"T00:00:00Z")-28*SDAY;let e=0,m=0,h=0;
+  rows.forEach(r=>{if(r.kind!=="ride"||r.IF==null||Date.parse(r.d+"T00:00:00Z")<cut)return;const mn=r.movingMin||0;if(r.IF<0.75)e+=mn;else if(r.IF<0.95)m+=mn;else h+=mn;});
+  const tot=e+m+h;const pc=v=>tot?Math.round(v/tot*100)+"%":"–";
+  $("st-mix").innerHTML=[["Easy","IF under 0.75 · aim ~80%",e],["Tempo / sweet spot","IF 0.75–0.95",m],["Hard","IF 0.95 and over",h]].map(([a,b,v])=>`<div class="hstat"><span class="s">${a}</span><span class="v">${pc(v)}</span><span class="s">${fmt(v,0)} min · ${b}</span></div>`).join("");
+  renderWhole();
+  loadStatusForm();}
+
+/* ---------- whole-body status ---------- */
+// lifts/<date>: Hevy sets scored (RPE−5) per working set by area; daily/<date>: hrv, rhr, sleepScore (night before), otherLoad (walks, swims, yoga by HR).
+const AREAS=[["legs","Legs"],["push","Push","chest, shoulders, triceps"],["pull","Pull","back, biceps"]];
+function median(a){if(!a.length)return null;const b=a.slice().sort((x,y)=>x-y);const m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+function wholeModel(){
+  const c=state.status;const t0=Date.parse(c.start+"T00:00:00Z"),tEnd=Date.parse(todayISO()+"T00:00:00Z");
+  const loads={},rows=[];const add=(d,v)=>{loads[d]=(loads[d]||0)+v;};
+  ridesList().forEach(r=>{const L=rideLoad(r,c);if(!L)return;const d=String(r.date).slice(0,10);add(d,L.load);
+    rows.push({d,kind:"ride",name:r.indoor?"Indoor ride":"Outdoor ride",dur:r.movingMin?r.movingMin+" min":"–",detail:r.npPower?`NP ${r.npPower} W · IF ${fmt(L.IF,2)}`:(r.avgHr?`HR ${r.avgHr}`:"–"),load:L.load,method:L.method});});
+  Object.keys(state.lifts||{}).forEach(k=>{const l=state.lifts[k];const d=String(l.date||k).slice(0,10);if(!(l.total>0))return;add(d,l.total);
+    const parts=[["push","push"],["pull","pull"],["legs","legs"],["core","core"]].filter(([a])=>l[a]>=1).map(([a,lab])=>`${lab} ${fmt(l[a],0)}`).join(" · ");
+    rows.push({d,kind:"lift",name:"Lifting",dur:"–",detail:parts,load:l.total,method:`Hevy: ${l.sets} sets`});});
+  Object.keys(state.daily||{}).forEach(k=>{const x=state.daily[k];const d=String(x.date||k).slice(0,10);if(!(x.otherLoad>0))return;add(d,x.otherLoad);
+    const acts=(x.other||[]).map(a=>a.type?a.type.replace(/_/g," "):"activity").join(", ");
+    rows.push({d,kind:"other",name:acts?acts.charAt(0).toUpperCase()+acts.slice(1):"Other activity",dur:(x.other||[]).reduce((s,a)=>s+(a.min||0),0)?(x.other||[]).reduce((s,a)=>s+(a.min||0),0)+" min":"–",detail:x.otherNote||"",load:x.otherLoad,method:"Heart rate"});});
+  let ctl=c.wbSeed!=null?c.wbSeed:40,atl=ctl;const s=[];
+  for(let t=t0;t<=tEnd;t+=SDAY){const d=isoU(t);const L=loads[d]||0;ctl+=(L-ctl)/42;atl+=(L-atl)/7;s.push({t,d,load:L,ctl,atl,tsb:ctl-atl});}
+  rows.sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+  return{s,rows};}
+function wholeReadiness(s){
+  const days=Object.keys(state.daily||{}).sort();const today=todayISO();
+  const cur=[...days].reverse().find(d=>d<=today&&(state.daily[d].hrv!=null||state.daily[d].sleepScore!=null));
+  if(!cur)return{v:"–",cls:"na",why:["No recovery data yet. It arrives with the morning pull."],d:null};
+  const x=state.daily[cur];const prior=days.filter(d=>d<cur&&Date.parse(d+"T00:00:00Z")>=Date.parse(cur+"T00:00:00Z")-28*SDAY);
+  const hv=prior.map(d=>state.daily[d].hrv).filter(v=>v!=null),rv=prior.map(d=>state.daily[d].rhr).filter(v=>v!=null);
+  const hb=hv.length>=7?median(hv):47,rb=rv.length>=7?median(rv):57;
+  const prevD=isoU(Date.parse(cur+"T00:00:00Z")-SDAY);
+  let red=0,amb=0;const why=[];
+  if(x.hrv!=null){const r=x.hrv/hb;if(r<0.7){red++;why.push(`HRV ${fmt(x.hrv,0)}, well under your usual ${fmt(hb,0)}`);}else if(r<0.85){amb++;why.push(`HRV ${fmt(x.hrv,0)}, below your usual ${fmt(hb,0)}`);}else why.push(`HRV ${fmt(x.hrv,0)}, normal for you (${fmt(hb,0)})`);}
+  if(x.rhr!=null){const dl=x.rhr-rb;if(dl>=7){red++;why.push(`Resting HR ${fmt(x.rhr,0)}, ${fmt(dl,0)} above usual`);}else if(dl>=4){amb++;why.push(`Resting HR ${fmt(x.rhr,0)}, ${fmt(dl,0)} above usual`);}}
+  if(x.sleepScore!=null){if(x.sleepScore<45){red++;why.push(`Sleep score ${fmt(x.sleepScore,0)}`);}else if(x.sleepScore<60){amb++;why.push(`Sleep score ${fmt(x.sleepScore,0)}`);}}
+  const f=s.length?s[s.length-1].tsb:0;if(f<-30){amb++;why.push(`Whole-body form ${fmt(f,0)}: carrying a lot of fatigue`);}
+  const v=red||amb>=2?"Easy day":amb?"Train with care":"Ready";const cls=red||amb>=2?"behind":amb?"over":"ahead";
+  return{v,cls,why,d:cur};}
+function areaFresh(rows){const today=Date.parse(todayISO()+"T00:00:00Z");
+  return AREAS.map(([key,lab,sub])=>{
+    const hits=Object.keys(state.lifts||{}).map(k=>({d:String(state.lifts[k].date||k).slice(0,10),v:state.lifts[k][key]||0,src:"Hevy"})).filter(h=>h.v>0);
+    if(key==="legs")rows.filter(r=>r.kind==="ride"&&r.load>=40).forEach(r=>hits.push({d:r.d,v:r.load*0.4,src:"ride"}));
+    hits.sort((a,b)=>a.d<b.d?1:-1);const last=hits.find(h=>h.v>=15);
+    const wk=hits.filter(h=>Date.parse(h.d+"T00:00:00Z")>today-7*SDAY).reduce((s,h)=>s+h.v,0);
+    if(!last)return{lab,sub,v:"No data",cls:"na",s:"Nothing logged yet"};
+    const ago=Math.round((today-Date.parse(last.d+"T00:00:00Z"))/SDAY);
+    const fresh=ago>=3||(ago>=2&&last.v<30);
+    return{lab,sub,v:fresh?"Fresh":(ago===0?"Worked today":"Recovering"),cls:fresh?"ahead":"over",
+      s:`Last hard: ${fmtD(Date.parse(last.d+"T00:00:00Z"))}${last.src==="ride"?" (ride)":""}, ${fmt(last.v,0)} pts, ${ago===0?"today":ago===1?"yesterday":ago+" days ago"} · 7-day total ${fmt(wk,0)} pts`};});}
+function renderWhole(){const {s,rows}=wholeModel();const R=wholeReadiness(s);const cur=s[s.length-1]||{ctl:0,atl:0,tsb:0};
+  const wk=s.length>7?s[s.length-8]:s[0]||cur;const ramp=cur.ctl-wk.ctl;
+  const cut=Date.parse(todayISO()+"T00:00:00Z")-6*SDAY;const sum=k=>rows.filter(r=>r.kind===k&&Date.parse(r.d+"T00:00:00Z")>=cut).reduce((a,r)=>a+r.load,0);
+  const kpi=(lab,v,sub)=>`<div class="kpi"><span class="s">${lab}</span><div class="v">${v}</div><span class="s">${sub}</span></div>`;
+  $("wb-kpis").innerHTML=
+    `<div class="kpi" style="grid-column:1/-1"><span class="s">Readiness${R.d?`, ${fmtD(Date.parse(R.d+"T00:00:00Z"))}`:""}</span><div class="v">${R.v}</div><span><span class="pill ${R.cls}">${R.v}</span></span><span class="s">${R.why.map(escapeHtml).join(" · ")}</span></div>`+
+    kpi("Fitness",fmt(cur.ctl,0),"6-week average daily load, all training")+
+    kpi("Fatigue",fmt(cur.atl,0),"7-day average daily load, all training")+
+    kpi("Form",(Math.round(cur.tsb)>0?"+":"")+fmt(Math.round(cur.tsb)||0,0),"Fitness minus fatigue. −10 to −30 is normal while building")+
+    kpi("Last 7 days",fmt(sum("lift")+sum("ride")+sum("other"),0)+" pts",`Lifting ${fmt(sum("lift"),0)} · riding ${fmt(sum("ride"),0)} · other ${fmt(sum("other"),0)}`);
+  $("wb-areas").innerHTML=areaFresh(rows).map(a=>`<div class="card"><div class="card-top"><div><h3>${a.lab}</h3>${a.sub?`<div class="card-sub">${a.sub}</div>`:""}</div><span class="pill ${a.cls}">${a.v}</span></div><span class="card-sub">${a.s}</span></div>`).join("");
+  drawStatusChart($("wb-chart"),s);
+  $("st-body").innerHTML=rows.slice(0,30).map(r=>`<tr><td>${fmtD(Date.parse(r.d+"T00:00:00Z"))}</td><td>${escapeHtml(r.name)}</td><td>${r.dur}</td><td>${escapeHtml(r.detail||"–")}</td><td>${fmt(r.load,0)}</td><td>${r.method}</td></tr>`).join("")||`<tr><td colspan="6" style="text-align:center;color:var(--muted)">No sessions yet</td></tr>`;}
+function loadStatusForm(){const c=state.status;$("st-ftp").value=c.ftp;$("st-if").value=Math.round(c.indoorFactor*100);$("st-lthr").value=c.lthr;$("st-leg").value=c.legLoad;$("st-seed").value=c.seed;$("st-skip").value=(c.legSkip||[]).join(", ");}
+$("st-form").addEventListener("submit",async ev=>{ev.preventDefault();if(!state.db){$("st-msg").textContent="Saving isn't available in this view.";return;}
+  const n=id=>Number($(id).value);
+  const body=Object.assign({},state.status,{ftp:n("st-ftp"),indoorFactor:n("st-if")/100,lthr:n("st-lthr"),legLoad:n("st-leg"),seed:n("st-seed"),legSkip:$("st-skip").value.split(",").map(x=>x.trim()).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x))});
+  try{await state.db.doc("config/status").set(body);$("st-msg").textContent="Saved.";}catch(_){$("st-msg").textContent="Couldn't save. Try again.";}});
+new ResizeObserver(()=>{const el=$("st-chart");if(el._st&&!$("page-status").hidden)drawStatusChart(el,el._st);}).observe($("st-chart"));
+new ResizeObserver(()=>{const el=$("wb-chart");if(el._st&&!$("page-status").hidden)drawStatusChart(el,el._st);}).observe($("wb-chart"));
+
+/* ---------- boot ---------- */
+loadTargetsIntoForm();render();
+(function(){
+  const D=JSON.parse(document.getElementById("site-data").textContent);
+  state.targets=mergeTargets(D.targets);loadTargetsIntoForm();
+  state.weeks=D.weeks;state.sample=false;state.rides=D.rides;state.summary=D.summary;
+  state.lifts=D.lifts;state.daily=D.daily;state.legs=D.legs;state.status=Object.assign({},ST_DEF,D.status||{});
+  $("logPanel").parentElement.hidden=true;
+  $("st-form").closest("details").hidden=true;
+  render();renderSummary();
+})();
+})();
+</script>
+
+
+
+</body></html>
