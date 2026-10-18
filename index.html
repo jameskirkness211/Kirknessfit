@@ -850,8 +850,8 @@ function render(){
   const nextMonthly=(T.reviews||[]).find(r=>parseD(r.d)>=today)||null;
   const sameDay=nextMonthly&&parseD(nextMonthly.d)===nextSun;
   $("kpis").innerHTML=[
-    {e:"On or ahead of plan",v:scored?`${counts.ahead+counts.on}/${scored}`:"–",s:scored?`${counts.ahead} ahead · ${counts.behind} behind${counts.over?` · ${counts.over} too much`:""}, latest week`:"Scores after the first logged week"},
-    {e:`Weeks at ${T.sessions.floor}+ days`,v:sess.length?`${floorHit}/${sess.length}`:"–",s:`Floor ${T.sessions.floor} · plan ${T.sessions.plan} · 7 is banned`},
+    {e:"On or ahead of plan",v:scored?`${counts.ahead+counts.on}/${scored}`:"–",s:scored?`out of ${scored} scorecard measures with a target, latest week · ${counts.ahead} ahead · ${counts.behind} behind${counts.over?` · ${counts.over} too much`:""}`:"Scores after the first logged week"},
+    {e:`Weeks at ${T.sessions.floor}+ days`,v:sess.length?`${floorHit}/${sess.length}`:"–",s:`weeks hitting the ${T.sessions.floor}-day floor so far · floor ${T.sessions.floor} · plan ${T.sessions.plan} · 7 is banned`},
     {e:"Bench vs plan",v:bli>=0?`${fmt(bs.actual[bli],1)} kg`:"–",s:bli>=0?`e1RM, W${bli+1}. Plan ${bs.label[bli]||"–"} (e1RM ${fmt(bs.target[bli],1)})`:"Plan W13: 105 × 5 (e1RM ~122)"},
     {e:"Next review",v:sunIdx<T.blockWeeks?fmtD(nextSun):"–",s:sunIdx<T.blockWeeks?`Sunday · Week ${sunIdx+1} review${sameDay?` + ${nextMonthly.t.toLowerCase()}`:""}${nextMonthly&&!sameDay?` · next monthly: ${fmtD(parseD(nextMonthly.d))}`:""}`:"Block complete"}
   ].map(k=>`<div class="kpi"><span class="eyebrow">${k.e}</span><span class="v num">${k.v}</span><span class="s">${k.s}</span></div>`).join("");
