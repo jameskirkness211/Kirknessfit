@@ -1072,8 +1072,8 @@ function renderWhole(){const {s,rows}=wholeModel();const R=wholeReadiness(s);con
   const kpi=(lab,v,sub)=>`<div class="kpi"><span class="s">${lab}</span><div class="v">${v}</div><span class="s">${sub}</span></div>`;
   $("wb-kpis").innerHTML=
     `<div class="kpi" style="grid-column:1/-1"><span class="s">Readiness${R.d?`, ${fmtD(Date.parse(R.d+"T00:00:00Z"))}`:""}</span><div class="v">${R.v}</div><span><span class="pill ${R.cls}">${R.v}</span></span><span class="s">${R.why.map(escapeHtml).join(" · ")}</span></div>`+
-    kpi("Fitness",fmt(cur.ctl,0),"6-week average daily load, all training")+
-    kpi("Fatigue",fmt(cur.atl,0),"7-day average daily load, all training")+
+    kpi("Fitness",fmt(cur.ctl,0),"6-week average daily load in points, all training. No fixed maximum: it builds slowly, so compare it with your own past weeks")+
+    kpi("Fatigue",fmt(cur.atl,0),`7-day average daily load in points, all training. No fixed maximum: judge it against Fitness (${fmt(cur.ctl,0)}). It is ${fmt(Math.abs(cur.atl-cur.ctl),0)} ${cur.atl>=cur.ctl?"above":"below"} Fitness now; more than 30 above is flagged as heavy`)+
     kpi("Form",(Math.round(cur.tsb)>0?"+":"")+fmt(Math.round(cur.tsb)||0,0),"Fitness minus fatigue. −10 to −30 is normal while building")+
     kpi("Last 7 days",fmt(sum("lift")+sum("ride")+sum("other"),0)+" pts",`Lifting ${fmt(sum("lift"),0)} · riding ${fmt(sum("ride"),0)} · other ${fmt(sum("other"),0)}`);
   $("wb-areas").innerHTML=areaFresh(rows).map(a=>`<div class="card"><div class="card-top"><div><h3>${a.lab}</h3>${a.sub?`<div class="card-sub">${a.sub}</div>`:""}</div><span class="pill ${a.cls}">${a.v}</span></div><span class="card-sub">${a.s}</span></div>`).join("");
