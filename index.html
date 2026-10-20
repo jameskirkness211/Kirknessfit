@@ -71,7 +71,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .kpi .v{font-family:var(--display);font-size:38px;font-weight:700;line-height:1}
 .kpi .s{font-size:13px;color:var(--ink-2)}
 section{display:flex;flex-direction:column;gap:14px}
-#page-overview,#page-cycling,#page-status,#page-week,#page-block{display:flex;flex-direction:column;gap:28px}
+#page-overview,#page-cycling,#page-status,#page-week,#page-block,#page-zones{display:flex;flex-direction:column;gap:28px}
 .sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
 .sec-head span{color:var(--muted);font-size:13px}
 .table-wrap{overflow:auto;max-height:78vh;background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring)}
@@ -99,6 +99,16 @@ td.metric small{display:block;font-weight:400;color:var(--muted);font-size:12px}
 .hstat .v{font-family:var(--display);font-size:30px;font-weight:700;line-height:1.05}
 .hstat .s{font-size:12px;color:var(--ink-2)}
 .card{background:var(--surface);border-radius:8px;box-shadow:0 0 0 1px var(--ring);padding:14px 14px 8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.zn-map{display:grid;gap:10px}
+.zn-row{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:center}
+.zn-row>span{font-size:13px;font-weight:600;color:var(--ink-2)}
+.zn-bar{display:flex;height:44px;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--ring)}
+.zn-seg{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:0;padding:0 2px;font-size:11px;line-height:1.15;color:#0f1412;font-variant-numeric:tabular-nums;text-align:center;overflow:hidden}
+.zn-seg b{font-size:12px}
+.zn-tbl table{min-width:640px}.zn-tbl th,.zn-tbl td{text-align:left;white-space:normal;vertical-align:top}
+.zn-tbl td:nth-child(-n+5){white-space:nowrap}
+.zn-sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+@media (max-width:600px){.zn-row{grid-template-columns:1fr}.zn-seg{font-size:9px}.zn-seg b{font-size:10px}}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .card-top .big{white-space:nowrap;font-family:var(--display);font-size:28px;font-weight:700;line-height:1;text-align:right}
 .card-top .big small{font-size:14px;color:var(--muted);font-weight:500;margin-left:2px}
@@ -177,6 +187,7 @@ tr.grp td{background:var(--surface-2);font-family:var(--display);font-size:13px;
     <button type="button" class="tab-btn" id="tabWeek">Week to date</button>
     <button type="button" class="tab-btn" id="tabBlock">Block to date</button>
     <button type="button" class="tab-btn" id="tabStatus">Training status</button>
+    <button type="button" class="tab-btn" id="tabZones">Zones</button>
   </div>
 
 <div id="page-overview">
@@ -336,6 +347,38 @@ tr.grp td{background:var(--surface-2);font-family:var(--display);font-size:13px;
     <div class="table-wrap"><table>
       <thead><tr><th>Metric</th><th>Week 1</th><th>Block avg</th><th>Last 3 wks</th><th>Last week</th><th>This week</th><th>Trend</th><th>Last week v usual</th></tr></thead>
       <tbody id="bk-rows"></tbody>
+    </table></div>
+  </section>
+</div>
+<div id="page-zones" hidden>
+  <section>
+    <div class="sec-head"><h2>Your training zones</h2><span id="zn-basis"></span></div>
+    <p class="sum-head" id="zn-head"></p>
+    <div class="sum-grid" id="zn-notes"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Zone map</h2><span>Power outdoors, power on the turbo, and heart rate · Z1 shortened to fit</span></div>
+    <div class="zn-map" id="zn-map"></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Power zones</h2><span id="zn-psub"></span></div>
+    <div class="table-wrap zn-tbl"><table>
+      <thead><tr><th>Zone</th><th>Name</th><th>% of FTP</th><th>Outdoor</th><th>Turbo</th><th>Feels like</th><th>Use it for</th></tr></thead>
+      <tbody id="zn-power"></tbody>
+    </table></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Heart-rate zones</h2><span id="zn-hsub"></span></div>
+    <div class="table-wrap zn-tbl"><table>
+      <thead><tr><th>Zone</th><th>Name</th><th>% of threshold HR</th><th>Heart rate</th><th>Feels like</th></tr></thead>
+      <tbody id="zn-hr"></tbody>
+    </table></div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>Your rides by zone</h2><span>Average power and heart rate of each logged ride, placed in its zone</span></div>
+    <div class="table-wrap zn-tbl"><table>
+      <thead><tr><th>Date</th><th>Ride</th><th>Avg HR</th><th>HR zone</th><th>NP / avg power</th><th>Power zone</th></tr></thead>
+      <tbody id="zn-rides"></tbody>
     </table></div>
   </section>
 </div>
@@ -856,12 +899,13 @@ function renderCycling(){
     return `<tr><td>${fmtD(parseD(r.date))}</td><td>W${w}</td><td>${rideTypeLabel(r)}</td><td>${r.distanceKm!=null?fmt(r.distanceKm,1)+" km":"–"}</td><td>${r.movingMin!=null?fmt(r.movingMin,0)+" min":"–"}</td><td>${r.elevM!=null?fmt(r.elevM,0)+" m":"–"}</td><td>${r.avgHr!=null?fmt(r.avgHr,0):"–"}</td><td>${r.maxHr!=null?fmt(r.maxHr,0):"–"}</td><td>${r.avgPower!=null?fmt(r.avgPower,0)+" W":"–"}</td><td>${r.npPower!=null?fmt(r.npPower,0)+" W":"–"}</td><td>${r.ef!=null?fmt(r.ef,2):"–"}</td><td>${r.avgSpeed!=null?fmt(r.avgSpeed,1)+" km/h":"–"}</td></tr>`;
   }).join("")||`<tr><td colspan="12" style="text-align:center;color:var(--muted)">No rides logged yet</td></tr>`;
 }
-function switchPage(p){$("page-week").hidden=p!=="week";$("page-block").hidden=p!=="block";$("tabWeek").classList.toggle("active",p==="week");$("tabBlock").classList.toggle("active",p==="block");if(p==="week")renderWeekToDate();if(p==="block")renderBlockToDate();$("page-overview").hidden=p!=="overview";$("page-cycling").hidden=p!=="cycling";$("page-status").hidden=p!=="status";
+function switchPage(p){$("page-zones").hidden=p!=="zones";$("tabZones").classList.toggle("active",p==="zones");if(p==="zones")renderZones();$("page-week").hidden=p!=="week";$("page-block").hidden=p!=="block";$("tabWeek").classList.toggle("active",p==="week");$("tabBlock").classList.toggle("active",p==="block");if(p==="week")renderWeekToDate();if(p==="block")renderBlockToDate();$("page-overview").hidden=p!=="overview";$("page-cycling").hidden=p!=="cycling";$("page-status").hidden=p!=="status";
   $("tabOverview").classList.toggle("active",p==="overview");$("tabCycling").classList.toggle("active",p==="cycling");$("tabStatus").classList.toggle("active",p==="status");
   if(p==="cycling")renderCycling();if(p==="status")renderStatus();}
 $("tabOverview").addEventListener("click",()=>switchPage("overview"));
 $("tabCycling").addEventListener("click",()=>switchPage("cycling"));
 $("tabStatus").addEventListener("click",()=>switchPage("status"));
+$("tabZones").addEventListener("click",()=>switchPage("zones"));
 $("tabWeek").addEventListener("click",()=>switchPage("week"));
 $("tabBlock").addEventListener("click",()=>switchPage("block"));
 
@@ -1268,6 +1312,45 @@ function renderPeriods(){try{if(!$("page-week").hidden)renderWeekToDate();if(!$(
 new ResizeObserver(()=>{if(!$("page-block").hidden)renderBlockToDate();}).observe($("bk-chart"));
 {const _pdRender=render;render=function(){_pdRender();renderPeriods();};}
 setInterval(renderPeriods,15000);
+
+
+/* ---------- zones ---------- */
+const ZN_P=[{z:"Z1",n:"Active recovery",lo:0,hi:0.55,f:"Barely working. Full conversation",u:"Spinning out the legs, cool-downs, the day after a hard session"},
+ {z:"Z2",n:"Endurance",lo:0.56,hi:0.75,f:"Easy. Full sentences, nose breathing possible",u:"Most of your riding: Z2 rides, the long ride, the Thursday turbo"},
+ {z:"Z3",n:"Tempo",lo:0.76,hi:0.90,f:"Steady. Short sentences only",u:"Planned tempo blocks from Week 5 (3×5 min and up). Not by accident"},
+ {z:"Z4",n:"Threshold",lo:0.91,hi:1.05,f:"Hard. A few words at a time; sustainable for about 20–60 min",u:"FTP test, longer intervals later in the block"},
+ {z:"Z5",n:"VO2 max",lo:1.06,hi:1.20,f:"Very hard. 3–8 minute efforts",u:"Not in this block's plan"},
+ {z:"Z6",n:"Anaerobic",lo:1.21,hi:1.50,f:"Flat out for 30 s – 2 min",u:"Hills and sprints happen; not planned"},
+ {z:"Z7",n:"Sprint",lo:1.51,hi:null,f:"All-out, seconds",u:"Not planned"}];
+const ZN_H=[{z:"Z1",n:"Active recovery",lo:0,hi:0.68,f:"Very easy"},
+ {z:"Z2",n:"Endurance",lo:0.69,hi:0.83,f:"Easy, conversational"},
+ {z:"Z3",n:"Tempo",lo:0.84,hi:0.94,f:"Steady, breathing deeper"},
+ {z:"Z4",n:"Threshold",lo:0.95,hi:1.05,f:"Hard, near your one-hour limit"},
+ {z:"Z5",n:"VO2 max and above",lo:1.06,hi:null,f:"Very hard, short efforts"}];
+const ZN_COL=["#b9d7f5","#7fc97f","#f2d16b","#f5a35c","#ec6b5e","#c9489a","#7d3c98"];
+function znRange(list,k,base){const z=list[k];const b=z.hi==null?null:Math.round(z.hi*base);const a=k===0?0:Math.round(list[k-1].hi*base)+1;return k===0?`up to ${b}`:b==null?`${a}+`:`${a}–${b}`;}
+function znOf(list,v,base){if(v==null||!base)return null;for(let k=0;k<list.length;k++){if(list[k].hi==null||v<=Math.round(list[k].hi*base))return list[k];}return list[list.length-1];}
+function znPill(z){if(!z)return "–";const k=+z.z.slice(1)-1;return `<span class="zn-sw" style="background:${ZN_COL[k]}"></span>${z.z} ${z.n}`;}
+function znBar(list,base,unit,maxRatio,startRatio){const top=maxRatio,st=startRatio||0;return `<div class="zn-bar">`+list.map((z,k)=>{const lo=Math.max(st,k===0?0:list[k-1].hi),hi=z.hi==null?top:Math.min(z.hi,top);const w=Math.max(0,(hi-lo)/(top-st)*100);if(w<=0)return "";
+  return `<div class="zn-seg" style="width:${w}%;background:${ZN_COL[k]}" title="${z.z} ${z.n}: ${znRange(list,k,base)} ${unit}"><b>${z.z}</b><span>${znRange(list,k,base)}</span></div>`;}).join("")+`</div>`;}
+function renderZones(){const c=Object.assign({},ST_DEF,state.status||{});const ftp=c.ftp,ift=Math.round(c.ftp*c.indoorFactor),lthr=c.lthr;
+  $("zn-basis").textContent=`FTP ${ftp} W outdoors · ${ift} W on the turbo (${Math.round(c.indoorFactor*100)}%) · threshold HR ${lthr} bpm`;
+  const z2p=[Math.round(0.55*ftp)+1,Math.round(0.75*ftp)],z2i=[Math.round(0.55*ift)+1,Math.round(0.75*ift)],z2h=[Math.round(0.68*lthr)+1,Math.round(0.83*lthr)];
+  $("zn-head").textContent=`Your Zone 2 is ${z2p[0]}–${z2p[1]} W outdoors, ${z2i[0]}–${z2i[1]} W on the turbo, and ${z2h[0]}–${z2h[1]} bpm.`;
+  const notes=[
+   ["focus","Where these come from",`Seven power zones and five heart-rate zones, using the standard Coggan model on your FTP (${ftp} W) and threshold heart rate (${lthr} bpm). The turbo reads lower than the road, so turbo zones use ${Math.round(c.indoorFactor*100)}% of FTP. These are the same zones the ride notes use for "time in zones".`],
+   ["warn","How sure we are",`Both numbers are estimates until the proper FTP test in Week 7–8 (w/c 2 or 9 Nov). Your 11 Oct outdoor ride (173 W normalised for 80 min at avg HR 155) points to an FTP of roughly 195–205 W, so 185 W is deliberately conservative. The test's last 20 minutes will also give your real threshold heart rate. Every number on this page updates when those change.`],
+   ["good","Your rules in zone terms",`The rest-day Z2 rule (average 135 bpm or less) sits just under the top of heart-rate Z2 (${z2h[1]} bpm), so it means what it says. The long ride should be Z2 too: keep average HR at ${z2h[1]} or under and power ${z2p[0]}–${z2p[1]} W. The 145 bpm long-ride cap sits in low Z3, so treat it as the ceiling, not the aim.`],
+   ["bad","Garmin may show different numbers",`Garmin's default heart-rate zones are based on max HR, not threshold, so its Z2 is not this Z2. Set the Edge 540 and the watch to these numbers (power zones on the FTP above, heart-rate zones by threshold HR ${lthr}) so the colours match what the plan means.`]];
+  $("zn-notes").innerHTML=notes.map(([t,h,x])=>`<div class="sum-item ${t}"><span class="sum-tag">${h}</span><p>${escapeHtml(x)}</p></div>`).join("");
+  $("zn-map").innerHTML=`<div class="zn-row"><span>Outdoor power (W)</span>${znBar(ZN_P,ftp,"W",1.6,0.35)}</div><div class="zn-row"><span>Turbo power (W)</span>${znBar(ZN_P,ift,"W",1.6,0.35)}</div><div class="zn-row"><span>Heart rate (bpm)</span>${znBar(ZN_H,lthr,"bpm",1.12,0.55)}</div>`;
+  $("zn-psub").textContent=`Outdoor FTP ${ftp} W · turbo ${ift} W`;
+  $("zn-power").innerHTML=ZN_P.map((z,k)=>`<tr><td><span class="zn-sw" style="background:${ZN_COL[k]}"></span><b>${z.z}</b></td><td>${z.n}</td><td>${z.lo===0?"up to "+Math.round(z.hi*100):z.hi==null?Math.round(z.lo*100)+"+":Math.round(z.lo*100)+"–"+Math.round(z.hi*100)}%</td><td>${znRange(ZN_P,k,ftp)} W</td><td>${znRange(ZN_P,k,ift)} W</td><td>${z.f}</td><td>${z.u}</td></tr>`).join("");
+  $("zn-hsub").textContent=`Threshold HR ${lthr} bpm (estimate) · highest seen this block 181`;
+  $("zn-hr").innerHTML=ZN_H.map((z,k)=>`<tr><td><span class="zn-sw" style="background:${ZN_COL[k]}"></span><b>${z.z}</b></td><td>${z.n}</td><td>${z.lo===0?"up to "+Math.round(z.hi*100):z.hi==null?Math.round(z.lo*100)+"+":Math.round(z.lo*100)+"–"+Math.round(z.hi*100)}%</td><td>${znRange(ZN_H,k,lthr)} bpm</td><td>${z.f}</td></tr>`).join("");
+  const rides=ridesList().slice().reverse().slice(0,15);
+  $("zn-rides").innerHTML=rides.map(r=>{const pw=r.npPower||r.avgPower;const base=r.indoor?ift:ftp;return `<tr><td>${fmtD(parseD(String(r.date).slice(0,10)))}</td><td>${rideTypeLabel(r)}${r.movingMin?" · "+fmt(r.movingMin,0)+" min":""}</td><td>${r.avgHr!=null?fmt(r.avgHr,0):"–"}</td><td>${znPill(znOf(ZN_H,r.avgHr,lthr))}</td><td>${pw?fmt(pw,0)+" W":"–"}</td><td>${pw?znPill(znOf(ZN_P,pw,base)):"–"}</td></tr>`;}).join("")||`<tr><td colspan="6" style="text-align:center;color:var(--muted)">No rides yet</td></tr>`;
+}
 
 /* ---------- boot ---------- */
 loadTargetsIntoForm();render();
