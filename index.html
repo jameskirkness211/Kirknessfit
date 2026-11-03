@@ -230,7 +230,7 @@ tr.grp td{background:var(--surface-2);font-family:var(--display);font-size:13px;
   </section>
 
   <section>
-    <div class="sec-head"><h2>Last full week v plan</h2><span id="scoreWeek"></span></div>
+    <div class="sec-head"><h2 id="scoreTitle">Last full week v plan</h2><span id="scoreWeek"></span></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Metric</th><th>Week</th><th>Plan</th><th>Gap</th><th>vs week before</th><th>Since start</th><th>Status</th></tr></thead>
       <tbody id="scoreBody"></tbody>
@@ -242,9 +242,9 @@ tr.grp td{background:var(--surface-2);font-family:var(--display);font-size:13px;
     <div class="legend" style="display:flex;gap:16px;font-size:13px;color:var(--ink-2)"><span><i style="display:inline-block;width:10px;height:10px;background:var(--series);margin-right:6px"></i>Lifting</span><span><i style="display:inline-block;width:10px;height:10px;background:var(--good);margin-right:6px"></i>Riding</span><span><i style="display:inline-block;width:10px;height:10px;background:var(--sample);margin-right:6px"></i>Other</span></div>
   </section>
   <section>
-    <div class="sec-head"><h2>Current v trend</h2><span>Complete weeks only · trend = direction across the block. The week in progress is on This week</span></div>
+    <div class="sec-head"><h2>Current v trend</h2><span>Complete weeks only, deload weeks left out (bodyweight keeps them) · trend = direction across the block. The week in progress is on This week</span></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Metric</th><th>Week 1</th><th>Block avg</th><th>Last 3 wks</th><th>Last week</th><th>Trend</th><th>Last week v usual</th></tr></thead>
+      <thead><tr><th>Metric</th><th>Week 1</th><th>Block avg</th><th>Last 3 wks</th><th>Last training wk</th><th>Trend</th><th>That week v usual</th></tr></thead>
       <tbody id="bk-rows"></tbody>
     </table></div>
   </section>
@@ -1025,11 +1025,15 @@ function render(){
   const wd={};Object.keys(weeks).forEach(k=>{if(!(weeks[k]||{}).inProgress)wd[k]=weeks[k];});
   const S={};METRICS.forEach(m=>S[m.key]=series(m,wd));
   const lastIdx=Math.max(-1,...Object.keys(wd).map(idxOf).filter(i=>i>=0));
-  $("scoreWeek").textContent=lastIdx>=0?`Week ${lastIdx+1}, w/c ${fmtD(dateOfIdx(lastIdx))}${isDeload(lastIdx)?" (deload)":""} · the week in progress is on This week`:"Shows once the first week is complete";
+  // A deload is never the benchmark: while the latest complete week is a deload, score the last normal week before it
+  const deloadLast=lastIdx>=0&&isDeload(lastIdx);const normalIdxs=Object.keys(wd).map(idxOf).filter(i=>i>=0&&!isDeload(i));
+  const scoreIdx=deloadLast&&normalIdxs.length?Math.max(...normalIdxs):lastIdx;const skipDeload=scoreIdx!==lastIdx;
+  $("scoreTitle").textContent=skipDeload?"Last normal week v plan":"Last full week v plan";
+  $("scoreWeek").textContent=scoreIdx>=0?`Week ${scoreIdx+1}, w/c ${fmtD(dateOfIdx(scoreIdx))}${skipDeload?` · Week ${lastIdx+1} was a deload, so it isn't scored: this is the week before it`:isDeload(scoreIdx)?" (deload)":""} · the week in progress is on This week`:"Shows once the first week is complete";
 
   let rows="";const counts={ahead:0,on:0,behind:0,na:0,track:0,over:0,deload:0,prog:0};let grp="";
   METRICS.forEach(m=>{if(T.runPaused&&m.group==="run")return;const s=S[m.key];if(m.group!==grp){grp=m.group;rows+=`<tr class="grp"><td colspan="7">${G[grp]}</td></tr>`;}
-    const li=lastIdxOf(s.raw);const a=li>=0?s.raw[li]:null;const st=li>=0&&(li===lastIdx||m.testOnly)?status(m,s,li):"na";counts[st]++;
+    const li=lastIdxOf(s.raw.slice(0,scoreIdx+1));const a=li>=0?s.raw[li]:null;const st=li>=0&&(li===scoreIdx||m.testOnly)?status(m,s,li):"na";counts[st]++;
     const ti=li>=0?li:Math.max(0,nowIdx);const t=s.target[ti];const lab=s.label[ti];
     const pi=lastIdxOf(s.actual.slice(0,Math.max(0,li)));const prev=pi>=0?s.actual[pi]:null;const first=s.i0>=0?s.actual[s.i0]:null;
     const aa=(m.deloadSkip&&isDeload(li))?null:a;
@@ -1061,11 +1065,11 @@ function render(){
   const NORMS={vo2:[[10,24.9],[20,29.8],[30,33.5],[40,37.0],[50,39.7],[60,43.4],[70,46.4],[80,50.0],[90,55.5]],bench:[[5,0.65],[20,0.78],[40,0.88],[60,0.98],[80,1.12],[95,1.35]]};
   const pctOf=(v,pts)=>{if(v<=pts[0][1])return{p:pts[0][0],edge:"below"};const L=pts[pts.length-1];if(v>=L[1])return{p:L[0],edge:"above"};for(let k=1;k<pts.length;k++){const [p1,v1]=pts[k-1],[p2,v2]=pts[k];if(v<=v2)return{p:p1+(p2-p1)*(v-v1)/(v2-v1)};}return{p:L[0]};};
   const topTxt=r=>r.edge==="above"?`Top ${100-r.p}% or better`:r.edge==="below"?`Bottom ${r.p}%`:`Top ${Math.max(1,Math.round(100-r.p))}%`;
-  const latest=k=>{const s=S[k];const i=lastIdxOf(s.raw);return i>=0?{v:s.raw[i],i}:null;};
-  const vo=latest("vo2max"),be=latest("bench"),bw=latest("bodyweight");
+  const latest=k=>{const s=S[k];const i=lastIdxOf(s.actual);return i>=0?{v:s.actual[i],i}:null;};
+  const vo=latest("vo2max"),be=latest("bench");const bwAt=be?S.bodyweight.raw[be.i]:null;const bw=bwAt!=null?{v:bwAt,i:be.i}:latest("bodyweight");
   const tiles=[];
   if(vo){const r=pctOf(vo.v,NORMS.vo2);tiles.push(["Fitness",topTxt(r),`VO2 max ${fmt(vo.v,1)} (Garmin estimate, W${vo.i+1}) · ${Math.round(r.p)}th percentile · FRIEND registry norms`]);}else tiles.push(["Fitness","–","Needs a VO2 max reading from the weekly pull"]);
-  if(be&&bw){const ratio=be.v/bw.v;const r=pctOf(ratio,NORMS.bench);tiles.push(["Strength",topTxt(r),`Bench ${fmt(be.v,1)} kg e1RM ÷ ${fmt(bw.v,1)} kg = ${ratio.toFixed(2)}× bodyweight · ${Math.round(r.p)}th percentile · Cooper Institute norms`]);}else tiles.push(["Strength","–","Needs a bench top set and a weigh-in"]);
+  if(be&&bw){const ratio=be.v/bw.v;const r=pctOf(ratio,NORMS.bench);tiles.push(["Strength",topTxt(r),`Bench ${fmt(be.v,1)} kg e1RM (W${be.i+1}, deloads not counted) ÷ ${fmt(bw.v,1)} kg = ${ratio.toFixed(2)}× bodyweight · ${Math.round(r.p)}th percentile · Cooper Institute norms`]);}else tiles.push(["Strength","–","Needs a bench top set and a weigh-in"]);
   $("stand").innerHTML=tiles.map(([a,v,s])=>`<div class="hstat"><span class="eyebrow">${a}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`).join("");
   const rp=!!T.runPaused;$("runSection").style.display=rp?"none":"";["tfRunT","tfRunF"].forEach(id=>$(id).style.display=rp?"none":"");document.querySelectorAll("#lf-groups .run-g").forEach(e=>e.style.display=rp?"none":"");
   const rw=T.runKm.startWeek;$("runSub").textContent=`One easy run on Friday from W${rw} (w/c ${fmtD(dateOfIdx(rw-1))}), once the calf raise and hop tests pass`;
@@ -1073,7 +1077,7 @@ function render(){
     return `<div class="hstat"><span class="eyebrow">${lab} · block</span><span class="v num">${fmt(avg,dp)}${avg!=null&&u?` <small style="font-size:14px;color:var(--muted)">${u}</small>`:""}</span><span class="s">${ch==null?"Needs two weeks of data":`<span class="delta ${Math.abs(ch)<1e-9?"flat":good}">${ch>0?"+":ch<0?"−":"±"}${fmt(Math.abs(ch),dp)}</span> since first week`}</span></div>`;}).join("");
 
   Object.keys(G).forEach(gk=>{const host=$("g-"+gk);host.innerHTML="";
-    METRICS.filter(m=>m.group===gk).forEach(m=>{const s=S[m.key];const li=lastIdxOf(s.raw);const a=li>=0?s.raw[li]:null;const st=li>=0?status(m,s,li):"na";
+    METRICS.filter(m=>m.group===gk).forEach(m=>{const s=S[m.key];const li=lastIdxOf(m.deloadSkip||m.key==="sessions"?s.raw.map((v,i)=>isDeload(i)?null:v):s.raw);const a=li>=0?s.raw[li]:null;const st=li>=0?status(m,s,li):"na";
       const c=document.createElement("div");c.className="card";
       const leg=m.noTarget?"":m.key==="sessions"?`Floor ${T.sessions.floor} / plan ${T.sessions.plan}`:(s.lo.some(v=>v!=null)?((state.targets[m.key]||{}).model==="floorgoal"?`Floor ${state.targets[m.key].floor} g / aim ${state.targets[m.key].goal} g`:"Target band"):"Plan");
       c.innerHTML=`<div class="card-top"><div><h3>${m.label}</h3><div class="card-sub">${m.sub}${m.lower&&!m.fmt?" · lower is better":""}${m.fmt===clock?" · earlier is better":""}</div></div><div><div class="big num">${fv(m,a)}<small>${a!=null&&m.unit?m.unit:""}</small>${m.repsKey&&repsOf(m,li)!=null?`<span style="font-size:20px;white-space:nowrap"> × ${repsOf(m,li)}</span>`:""}</div><div style="text-align:right;margin-top:4px"><span class="pill ${st}">${tstat(m,st)}</span></div></div></div><div class="chart"></div><div class="legend"><span><i></i>Actual</span>${leg?`<span><i class="t"></i>${leg}</span>`:""}</div>`;
@@ -1373,10 +1377,10 @@ function renderBlockToDate(){
   const done=pdCompleted(),n=done.length,L=pdLoads();
   $("bk-title").textContent=`${n} complete week${n===1?"":"s"} of ${T.blockWeeks} · now in week ${cur+1}`;
   const val=(k,i)=>{if(k==="sessions"&&isDeload(i))return null;const m=METRICS.find(x=>x.key===k);const s=S[k];return m&&m.deloadSkip?s.actual[i]:s.raw[i];};
-  const rows=[],items=[],good=[],bad=[];
+  const rows=[],items=[],good=[],bad=[];const trainWks=done.filter(i=>!isDeload(i));
   PD_KEYS.forEach(k=>{const m=METRICS.find(x=>x.key===k);if(!m||(T.runPaused&&m.group==="run"))return;
-    const vs=done.map(i=>val(k,i));const have=vs.filter(v=>v!=null);if(!have.length)return;
-    const first=have[0],last=vs[vs.length-1]!=null?vs[vs.length-1]:have[have.length-1];const firstI=done[vs.findIndex(v=>v!=null)];let lastI=null;for(let j=vs.length-1;j>=0;j--)if(vs[j]!=null){lastI=done[j];break;}const avg=pdAvg(have);const l3=pdAvg(vs.slice(-3));
+    const wks=k==="bodyweight"||!trainWks.length?done:trainWks;const vs=wks.map(i=>val(k,i));const have=vs.filter(v=>v!=null);if(!have.length)return;
+    const first=have[0],last=vs[vs.length-1]!=null?vs[vs.length-1]:have[have.length-1];const firstI=wks[vs.findIndex(v=>v!=null)];let lastI=null;for(let j=vs.length-1;j>=0;j--)if(vs[j]!=null){lastI=wks[j];break;}const avg=pdAvg(have);const l3=pdAvg(vs.slice(-3));
     const earlier=pdAvg(vs.slice(0,-1));const sl=pdSlope(vs);const tr=sl?pdWord(m,sl.slope*sl.span,avg):{w:"–",cls:"na"};
     const cmp=pdCmp(m,last,earlier);const now=(state.weeks[isoD(dateOfIdx(cur))]||{})[k];
     rows.push({m,first,avg,l3,last,now,tr,cmp,firstI,lastI});});
@@ -1395,7 +1399,7 @@ function renderBlockToDate(){
   const bw=R("bodyweight");if(bw){const d=bw.last-bw.first;items.push(pdItem(d>0.3?"bad":d<-0.1?"good":"warn","Bodyweight",`${fmt(bw.first,1)} → ${fmt(bw.last,1)} kg (${d>=0?"+":"−"}${fmt(Math.abs(d),1)} kg). The recomp plan wants 0.1–0.35 kg a week down, so ${d<-0.1?"it's moving the right way":d>0.3?"it's moving the wrong way":"it hasn't moved yet"}.`));if(d>0.3)bad.push("bodyweight is up");}
   // current v trend
   const cv=rows.filter(r=>r.cmp.cls!=="na");const better=cv.filter(r=>r.cmp.cls==="ahead").map(r=>pdLc(r.m.label)),worse=cv.filter(r=>r.cmp.cls==="behind").map(r=>pdLc(r.m.label));
-  if(cv.length)items.push(pdItem(worse.length>better.length?"warn":"focus","Last week v the trend",`Compared with your block average, last complete week was better on ${better.length?pdJoin(better.slice(0,4)):"nothing"} and worse on ${worse.length?pdJoin(worse.slice(0,4)):"nothing"}.`));
+  if(cv.length)items.push(pdItem(worse.length>better.length?"warn":"focus","Last week v the trend",`Compared with your block average, your last training week was better on ${better.length?pdJoin(better.slice(0,4)):"nothing"} and worse on ${worse.length?pdJoin(worse.slice(0,4)):"nothing"}.`));
   const head=n?`${n} week${n===1?"":"s"} in: `+(good.length?pdJoin(good.slice(0,3)):"mixed so far")+(bad.length?`, but ${pdJoin(bad.slice(0,2))}.`:"."):"No complete weeks yet.";
   pdSum("bk",head,items);$("bkSumSec").hidden=!!(state.summary&&state.summary.headline);
   const ctl=L.s.length?L.s[L.s.length-1].ctl:null,ctl0=L.s.length?L.s[Math.min(6,L.s.length-1)].ctl:null;
