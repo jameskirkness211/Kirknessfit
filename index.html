@@ -256,7 +256,8 @@ details.more[open]>summary h2::before{content:"−"}
 .dcard .dn{font-weight:700;font-size:15px}
 .dcard .dt{font-size:14px;color:var(--ink-2)}
 .dres{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px 12px;font-size:14px;align-items:baseline}
-.dres.two{grid-template-columns:minmax(0,1fr) auto}
+.dres.two{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+.dres.two .x{overflow-wrap:anywhere}
 .dres .x{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 .dres .y{font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:right;font-size:13px}
 .dres .hd{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -296,6 +297,7 @@ details.lg-wk>summary::-webkit-details-marker{display:none}
   <div class="tabs">
     <button type="button" class="tab-btn active" id="tabStatus">Today</button>
     <button type="button" class="tab-btn" id="tabWeek">This week</button>
+    <button type="button" class="tab-btn" id="tabNext">Next week</button>
     <button type="button" class="tab-btn" id="tabOverview">Block</button>
     <button type="button" class="tab-btn" id="tabCycling">Cycling</button>
     <button type="button" class="tab-btn" id="tabLog">Log</button>
@@ -513,6 +515,17 @@ details.lg-wk>summary::-webkit-details-marker{display:none}
   </section>
 </div>
 <div id="page-log" hidden></div>
+<div id="page-next" hidden>
+  <section>
+    <div class="sec-head"><h2 id="nx-title">Next week</h2><span id="nx-src"></span></div>
+    <p class="sum-head" id="nx-head" style="font-family:var(--body);font-size:17px;font-weight:600"></p>
+  </section>
+  <div class="kpis" id="nx-kpis"></div>
+  <section>
+    <div class="sec-head"><h2>Day by day</h2><span>The plan for each day</span></div>
+    <div class="days" id="nx-days"></div>
+  </section>
+</div>
 <div id="page-status">
   <section id="todaySec">
     <div class="sec-head"><h2 id="td-title">Today</h2><span id="td-sub"></span></div>
@@ -1693,7 +1706,8 @@ function moreBox(title,sub,open){return mkEl(`<details class="more"${open?" open
   const pn=$("logPanel")&&$("logPanel").closest(".panels");if(pn)lg.appendChild(pn);
 })();
 // tab handling: Log is a page of its own; Zones and Targets live inside Cycling and Log now
-{const _sw=switchPage;switchPage=function(p){if(p==="zones")p="cycling";if(p==="targets")p="log";$("page-log").hidden=p!=="log";$("tabLog").classList.toggle("active",p==="log");_sw(p==="log"?"__log":p);if(p==="log")renderLog();};}
+{const _sw=switchPage;switchPage=function(p){if(p==="zones")p="cycling";if(p==="targets")p="log";$("page-log").hidden=p!=="log";$("tabLog").classList.toggle("active",p==="log");$("page-next").hidden=p!=="next";$("tabNext").classList.toggle("active",p==="next");_sw((p==="log"||p==="next")?"__x":p);if(p==="log")renderLog();if(p==="next")renderNext();};}
+$("tabNext").addEventListener("click",()=>switchPage("next"));
 $("tabLog").addEventListener("click",()=>switchPage("log"));
 // extras from Todoist: log/<id> = {date, name, kind (sauna|plunge|class|other), min?, note?}
 function extrasOn(d){return Object.keys(state.extra||{}).map(k=>state.extra[k]).filter(x=>x&&String(x.date).slice(0,10)===d);}
@@ -1702,7 +1716,7 @@ function planOf(d){const P=planFor(d);let n=P.n,it=P.items||[],src="plan";
   const WP=state.weekPlan;const wp=WP&&WP.days&&WP.days[d];if(wp){n=wp.session||n;if(Array.isArray(wp.items))it=wp.items;src="todoist";}
   const td=state.today||{},tm=state.tomorrow||{};
   if(td.date===d&&td.plan){n=td.plan;if(Array.isArray(td.items)&&td.items.length)it=td.items;src="todoist";}
-  if(tm.date===d&&tm.session){n=tm.session;if(Array.isArray(tm.items)&&tm.items.length)it=tm.items;src="todoist";}
+  if(tm.date===d&&tm.session&&(!wp||(tm.writtenAt&&WP.writtenAt&&tm.writtenAt>WP.writtenAt))){n=tm.session;if(Array.isArray(tm.items)&&tm.items.length)it=tm.items;src="todoist";}
   return {n,items:it,src,rest:/^rest/i.test(n)};}
 function renderWeekDays(){const el=$("wk-dcards");if(!el)return;
   const cur=currentWeekIdx(),a=dateOfIdx(cur),n0=new Date(),today=Date.UTC(n0.getFullYear(),n0.getMonth(),n0.getDate());
@@ -1737,6 +1751,25 @@ function renderWeekDays(){const el=$("wk-dcards");if(!el)return;
   el.innerHTML=h;}
 {const _rw=renderWeekToDate;renderWeekToDate=function(){_rw();try{renderWeekDays();}catch(e){console.error(e);}};}
 {const _rt=renderToday;renderToday=function(){_rt();try{const why=$("td-readyWhy").textContent||"";const n=$("td-readyNote");const t=fmtD(Date.parse(todayISO()+"T00:00:00Z"));if(why.indexOf("From "+t)===0&&/hadn.t synced|not synced|numbers are missing|no fresh recovery/i.test(n.textContent||""))n.textContent="";}catch(e){}};}
+
+function renderNext(){const el=$("nx-days");if(!el)return;const T=state.targets;const ni=currentWeekIdx()+1;
+  if(ni>=T.blockWeeks){$("nx-title").textContent="After the block";$("nx-src").textContent="";$("nx-head").textContent="The block ends on Sun 20 Dec. The Christmas bridge and the next block get planned at the block-close review.";$("nx-kpis").innerHTML="";el.innerHTML="";return;}
+  const a=dateOfIdx(ni),dl=isDeload(ni);const WP=state.weekPlan;const fromT=!!(WP&&WP.weekOf===isoD(a));
+  const S={};["rideKm","longRide","bench","wpu","dbRow","dbShoulder"].forEach(k=>{const m=METRICS.find(x=>x.key===k);if(m)S[k]=series(m,activeWeeks());});
+  const lab=k=>S[k]?(S[k].label[ni]||(S[k].target[ni]!=null?fv(METRICS.find(x=>x.key===k),S[k].target[ni]):null)):null;
+  const kmT=S.rideKm?S.rideKm.target[ni]:null,lrT=S.longRide?S.longRide.target[ni]:null;
+  $("nx-title").textContent=`Week ${ni+1}${dl?" (deload)":""} · ${fmtD(a)} – ${fmtD(a+6*DAY)}`;
+  $("nx-src").textContent=fromT?`From your Todoist plan${WP.writtenAt?" · written "+new Date(WP.writtenAt).toLocaleString("en-GB",{weekday:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"}):""}`:"From the cheat sheet · your Todoist plan replaces it at the Sunday planning";
+  const tdays=[];for(let k=0;k<7;k++){const P=planOf(isoD(a+k*DAY));if(!P.rest)tdays.push(P);}
+  $("nx-head").textContent=dl?`Deload week: lighter weights, no session floor. ${tdays.length} sessions planned.`:`${tdays.length} sessions planned (floor ${T.sessions.floor}, plan ${T.sessions.plan})${kmT!=null?`, ${fmt(kmT,0)} km of riding`:""}${lrT!=null?` with a ${fmt(lrT,0)} km long ride`:""}.`;
+  $("nx-kpis").innerHTML=pdKpi("Sessions",`${tdays.length}`,dl?"deload: no floor":`floor ${T.sessions.floor} · plan ${T.sessions.plan}`,null)+
+    pdKpi("Ride km",kmT!=null?`${fmt(kmT,0)} km`:"–",lrT!=null?`long ride ${fmt(lrT,0)} km`:"",null)+
+    pdKpi("Bench",lab("bench")||"–","top set",null)+
+    pdKpi("Weighted pull-up",lab("wpu")||"–","best set",null);
+  let h="";for(let k=0;k<7;k++){const t=a+k*DAY,d=isoD(t);const P=planOf(d);const dn=new Date(t).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});
+    const it=(P.items||[]).filter(r=>r&&r[0]).slice(0,6);
+    h+=`<div class="dcard fut"><div class="dh"><span class="dn">${dn}</span>${P.rest?'<span class="pill na">Rest</span>':'<span class="pill na">Planned</span>'}</div><div class="dt">${escapeHtml(P.n)}</div>${it.length&&!P.rest?`<div class="dres two"><span class="hd">Target</span><span></span>${it.map(r=>`<span>${escapeHtml(r[0])}</span><span class="x">${escapeHtml(r[1]||"")}</span>`).join("")}</div>`:""}</div>`;}
+  el.innerHTML=h;}
 const TREND_KEYS=["bench","rideKm","hrv","bodyweight"];
 function renderTrends(){const g=$("trend-grid");if(!g)return;const weeks=activeWeeks();const wd={};Object.keys(weeks).forEach(k=>{if(!(weeks[k]||{}).inProgress)wd[k]=weeks[k];});
   g.innerHTML="";TREND_KEYS.forEach(key=>{const m=METRICS.find(x=>x.key===key);if(!m)return;const s=series(m,wd);const li=lastIdxOf(s.actual);const last=li>=0?s.actual[li]:null;
@@ -1751,7 +1784,7 @@ function renderLog(){const el=$("lg-list");if(!el)return;const {rows}=wholeModel
   const cur=currentWeekIdx();const ks=Object.keys(byW).map(Number).sort((a,b)=>b-a);
   el.innerHTML=ks.map(i=>{const rs=byW[i];const a=dateOfIdx(i);const n=new Set(rs.filter(r=>r.kind!=="extra"&&r.kind!=="other").map(r=>r.d)).size;
     return `<details class="lg-wk"${i===cur||i===cur-1?" open":""}><summary><span><b>Week ${i+1}</b> · ${fmtD(a)} – ${fmtD(a+6*DAY)}</span><span class="mute">${rs.length} logged · ${n} training day${n===1?"":"s"}</span></summary>${rs.map(r=>`<div class="lg-row"><span class="ld">${new Date(Date.parse(r.d+"T00:00:00Z")).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",timeZone:"UTC"})}</span><span class="ln">${escapeHtml(r.name)}${r.kind==="ride"&&r.km?" · "+fmt(r.km,1)+" km":""}</span><span class="lg-tag t-${escapeHtml(String(r.kind))}">${escapeHtml(r.tag)}</span><span class="lm">${[r.dur&&r.dur!=="–"?r.dur:"",r.detail&&r.detail!=="–"?r.detail:"",r.load!=null?fmt(r.load,0)+" pts":""].filter(Boolean).map(escapeHtml).join(" · ")}</span></div>`).join("")}</details>`;}).join("")||`<p class="note">Nothing logged yet.</p>`;}
-{const _rp=renderPeriods;renderPeriods=function(){_rp();try{if(!$("page-log").hidden)renderLog();if(!$("page-week").hidden)renderWeekDays();}catch(e){console.error(e);}};}
+{const _rp=renderPeriods;renderPeriods=function(){_rp();try{if(!$("page-log").hidden)renderLog();if(!$("page-next").hidden)renderNext();if(!$("page-week").hidden)renderWeekDays();}catch(e){console.error(e);}};}
 
 /* ---------- boot ---------- */
 loadTargetsIntoForm();render();
