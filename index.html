@@ -1202,12 +1202,13 @@ function render(){
   // Percentiles: men 30-39. VO2: FRIEND registry treadmill VO2peak (Kaminsky et al., Mayo Clin Proc 2022). Bench: Cooper Institute 1RM/bodyweight norms (via ACE).
   const NORMS={vo2:[[10,24.9],[20,29.8],[30,33.5],[40,37.0],[50,39.7],[60,43.4],[70,46.4],[80,50.0],[90,55.5]],bench:[[5,0.65],[20,0.78],[40,0.88],[60,0.98],[80,1.12],[95,1.35]]};
   const pctOf=(v,pts)=>{if(v<=pts[0][1])return{p:pts[0][0],edge:"below"};const L=pts[pts.length-1];if(v>=L[1])return{p:L[0],edge:"above"};for(let k=1;k<pts.length;k++){const [p1,v1]=pts[k-1],[p2,v2]=pts[k];if(v<=v2)return{p:p1+(p2-p1)*(v-v1)/(v2-v1)};}return{p:L[0]};};
+  const ord=n=>{const v=n%100;return n+((v>=11&&v<=13)?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th"));};
   const topTxt=r=>r.edge==="above"?`Top ${100-r.p}% or better`:r.edge==="below"?`Bottom ${r.p}%`:`Top ${Math.max(1,Math.round(100-r.p))}%`;
   const latest=k=>{const s=S[k];const i=lastIdxOf(s.actual);return i>=0?{v:s.actual[i],i}:null;};
   const vo=latest("vo2max"),be=latest("bench");const bwAt=be?S.bodyweight.raw[be.i]:null;const bw=bwAt!=null?{v:bwAt,i:be.i}:latest("bodyweight");
   const tiles=[];
-  if(vo){const r=pctOf(vo.v,NORMS.vo2);tiles.push(["Fitness",topTxt(r),`VO2 max ${fmt(vo.v,1)} (Garmin estimate, W${vo.i+1}) · ${Math.round(r.p)}th percentile · FRIEND registry norms`]);}else tiles.push(["Fitness","–","Needs a VO2 max reading from the weekly pull"]);
-  if(be&&bw){const ratio=be.v/bw.v;const r=pctOf(ratio,NORMS.bench);tiles.push(["Strength",topTxt(r),`Bench ${fmt(be.v,1)} kg e1RM (W${be.i+1}, deloads not counted) ÷ ${fmt(bw.v,1)} kg = ${ratio.toFixed(2)}× bodyweight · ${Math.round(r.p)}th percentile · Cooper Institute norms`]);}else tiles.push(["Strength","–","Needs a bench top set and a weigh-in"]);
+  if(vo){const r=pctOf(vo.v,NORMS.vo2);tiles.push(["Fitness",topTxt(r),`VO2 max ${fmt(vo.v,1)} (Garmin estimate, W${vo.i+1}) · ${ord(Math.round(r.p))} percentile · FRIEND registry norms`]);}else tiles.push(["Fitness","–","Needs a VO2 max reading from the weekly pull"]);
+  if(be&&bw){const ratio=be.v/bw.v;const r=pctOf(ratio,NORMS.bench);tiles.push(["Strength",topTxt(r),`Bench ${fmt(be.v,1)} kg e1RM (W${be.i+1}, deloads not counted) ÷ ${fmt(bw.v,1)} kg = ${ratio.toFixed(2)}× bodyweight · ${ord(Math.round(r.p))} percentile · Cooper Institute norms`]);}else tiles.push(["Strength","–","Needs a bench top set and a weigh-in"]);
   $("stand").innerHTML=tiles.map(([a,v,s])=>`<div class="hstat"><span class="eyebrow">${a}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`).join("");
   const rp=!!T.runPaused;$("runSection").style.display=rp?"none":"";["tfRunT","tfRunF"].forEach(id=>$(id).style.display=rp?"none":"");document.querySelectorAll("#lf-groups .run-g").forEach(e=>e.style.display=rp?"none":"");
   const rw=T.runKm.startWeek;$("runSub").textContent=`One easy run on Friday from W${rw} (w/c ${fmtD(dateOfIdx(rw-1))}), once the calf raise and hop tests pass`;
@@ -1218,7 +1219,7 @@ function render(){
     METRICS.filter(m=>m.group===gk).forEach(m=>{const s=S[m.key];const li=lastIdxOf(m.deloadSkip||m.key==="sessions"?s.raw.map((v,i)=>isDeload(i)?null:v):s.raw);const a=li>=0?s.raw[li]:null;const st=li>=0?status(m,s,li):"na";
       const c=document.createElement("div");c.className="card";
       const leg=m.noTarget?"":m.key==="sessions"?`Floor ${T.sessions.floor} / plan ${T.sessions.plan}`:(s.lo.some(v=>v!=null)?((state.targets[m.key]||{}).model==="floorgoal"?`Floor ${state.targets[m.key].floor} g / aim ${state.targets[m.key].goal} g`:"Target band"):"Plan");
-      c.innerHTML=`<div class="card-top"><div><h3>${m.label}</h3><div class="card-sub">${m.sub}${m.lower&&!m.fmt?" · lower is better":""}${m.fmt===clock?" · earlier is better":""}</div></div><div><div class="big num">${fv(m,a)}<small>${a!=null&&m.unit?m.unit:""}</small>${m.repsKey&&repsOf(m,li)!=null?`<span style="font-size:20px;white-space:nowrap"> × ${repsOf(m,li)}</span>`:""}</div><div style="text-align:right;margin-top:4px"><span class="pill ${st}">${tstat(m,st)}</span></div></div></div><div class="chart"></div><div class="legend"><span><i></i>Actual</span>${leg?`<span><i class="t"></i>${leg}</span>`:""}</div>`;
+      c.innerHTML=`<div class="card-top"><div><h3>${m.label}</h3><div class="card-sub">${m.sub}${m.lower&&!m.fmt?" · lower is better":""}${m.fmt===clock?" · earlier is better":""}</div></div><div><div class="big num">${fv(m,a)}<small>${a!=null&&m.unit?m.unit:""}</small>${m.repsKey&&repsOf(m,li)!=null?`<span style="font-size:20px;white-space:nowrap"> × ${repsOf(m,li)}</span>`:""}</div><div style="text-align:right;margin-top:4px"><span class="pill ${st}">${tstat(m,st)}</span></div>${li>=0&&li<scoreIdx&&!m.testOnly?`<div class="card-sub" style="text-align:right;margin-top:2px">latest: W${li+1}</div>`:""}</div></div><div class="chart"></div><div class="legend"><span><i></i>Actual</span>${leg?`<span><i class="t"></i>${leg}</span>`:""}</div>`;
       if(false){const wk=currentWeekIdx();const f=document.createElement("form");f.className="qadd";f.noValidate=true;
         const opts=[wk,wk-1].filter(i=>i>=0).map(i=>`<option value="${i}">W${i+1}</option>`).join("");
         f.innerHTML=`<select id="qw-${m.key}" aria-label="Week" style="width:auto">${opts}</select><input id="qa-${m.key}" type="number" step="${m.step||0.1}" ${m.min!=null?`min="${m.min}"`:""} ${m.max!=null?`max="${m.max}"`:""} inputmode="decimal" placeholder="${m.ph||""}" aria-label="${m.label}${m.unit?" ("+m.unit+")":""}"><button type="submit">Add</button><span class="msg"></span>`;
@@ -1475,11 +1476,11 @@ function renderWeekToDate(){
   const hW=pdAvg(dd.map(x=>x.hrv)),hB=pdAvg(before.map(x=>x.hrv)),sW=pdAvg(dd.map(x=>x.sleepScore)),sB=pdAvg(before.map(x=>x.sleepScore)),slW=pdAvg(dd.map(x=>x.sleepH)),slB=pdAvg(before.map(x=>x.sleepH)),rW=pdAvg(dd.map(x=>x.rhr)),rB=pdAvg(before.map(x=>x.rhr));
   const rides=ridesList().filter(r=>pdIn(r.date,a,b));const kmSum=rides.reduce((s,r)=>s+(r.distanceKm||0),0);const km=W.rideKm!=null?W.rideKm:kmSum;
   const kmT=S.rideKm.target[cur],lrT=S.longRide.target[cur];const lr=W.longRide!=null?W.longRide:Math.max(0,...rides.filter(r=>!r.indoor).map(r=>r.distanceKm||0));
-  const sess=W.sessions!=null?W.sessions:new Set(L.rows.filter(r=>pdIn(r.d,a,b)&&r.kind!=="other").map(r=>r.d)).size;
+  const sess=W.sessions!=null?W.sessions:new Set(L.rows.filter(r=>pdIn(r.d,a,b)&&r.kind!=="other"&&r.name!=="Commute ride").map(r=>r.d)).size;
   const fl=T.sessions.floor,pl=T.sessions.plan,needFloor=Math.max(0,fl-sess),needPlan=Math.max(0,pl-sess);
   const dl=isDeload(cur);
   // lifts logged this week vs plan
-  const lifts=METRICS.filter(m=>(m.group==="strength"||m.group==="cal")&&W[m.key]!=null).map(m=>({m,st:status0(m,S[m.key],cur),v:W[m.key],lab:S[m.key].label[cur]||(S[m.key].target[cur]!=null?fv(m,S[m.key].target[cur]):"–")}));
+  const lifts=METRICS.filter(m=>(m.group==="strength"||m.group==="cal")&&W[m.key]!=null).map(m=>{const TT=tdTarget(m.key,liftDayIn(m.key,a));return {m,st:TT?tdStatus(m,W[m.key],W.wpuReps,TT):status0(m,S[m.key],cur),v:W[m.key],lab:TT?TT.lab+" (Todoist)":(S[m.key].label[cur]||(S[m.key].target[cur]!=null?fv(m,S[m.key].target[cur]):"–"))};});
   const up=lifts.filter(x=>x.st==="ahead"||x.st==="on"),down=lifts.filter(x=>x.st==="behind");
   $("wk-title").textContent=`Week ${cur+1}${dl?" (deload)":""} · ${fmtD(a)} – ${fmtD(b)} · day ${dayN} of 7`;
   // summary words
@@ -1513,7 +1514,7 @@ function renderWeekToDate(){
 
 
 /* ---------- block map: weeks, checkpoints and milestones. Targets come from the same series as the rest of the page ---------- */
-const MAP_CHECKS=[{w:5,t:"Calisthenics retest"},{w:6,t:"Month 1 review"},{w:8,t:"FTP test and efficiency retest"},{w:9,t:"Bench 100×5"},{w:10,t:"Month 2 review"},{w:12,t:"First 100 km ride"},{w:13,t:"Block close"}];
+const MAP_CHECKS=[{w:5,t:"Calisthenics retest"},{w:6,t:"Month 1 review"},{w:8,t:"Efficiency retest"},{w:9,t:"Bench 100×5 · FTP test"},{w:10,t:"Month 2 review"},{w:12,t:"First 100 km ride"},{w:13,t:"Block close"}];
 const MAP_MS=[["bench","Bench","kg"],["wpu","Weighted pull-up","+kg"],["pullups","Strict pull-ups",""],["dips","Dips",""],["lsit","L-sit","s"],["dbRow","DB row","kg"],["dbShoulder","DB shoulder press","kg"],["hipThrust","Hip thrust","kg"],["longRide","Longest ride","km"]];
 function renderMap(){if(!$("mapSec"))return;
   const T=state.targets,weeks=activeWeeks(),cur=currentWeekIdx(),now=Date.now(),start=parseD(T.blockStart);const S={};METRICS.forEach(m=>S[m.key]=series(m,weeks));
@@ -1550,8 +1551,8 @@ function renderBlockToDate(){
     const wks=k==="bodyweight"||!trainWks.length?done:trainWks;const vs=wks.map(i=>val(k,i));const have=vs.filter(v=>v!=null);if(!have.length)return;
     const first=have[0],last=vs[vs.length-1]!=null?vs[vs.length-1]:have[have.length-1];const firstI=wks[vs.findIndex(v=>v!=null)];let lastI=null;for(let j=vs.length-1;j>=0;j--)if(vs[j]!=null){lastI=wks[j];break;}const avg=pdAvg(have);const l3=pdAvg(vs.slice(-3));
     const earlier=pdAvg(vs.slice(0,-1));const sl=pdSlope(vs);const tr=sl?pdWord(m,sl.slope*sl.span,avg):{w:"–",cls:"na"};
-    const cmp=pdCmp(m,last,earlier);const now=(state.weeks[isoD(dateOfIdx(cur))]||{})[k];
-    rows.push({m,first,avg,l3,last,now,tr,cmp,firstI,lastI});});
+    const lw=vs[vs.length-1],lwI=wks[wks.length-1];const cmp=pdCmp(m,lw,earlier);const now=(state.weeks[isoD(dateOfIdx(cur))]||{})[k];
+    rows.push({m,first,avg,l3,last,lw,lwI,now,tr,cmp,firstI,lastI});});
   const R=k=>rows.find(r=>r.m.key===k);
   // consistency
   const sess=done.map(i=>val("sessions",i)).filter(v=>v!=null);const fh=sess.filter(v=>v>=T.sessions.floor&&v<7).length;
@@ -1578,7 +1579,7 @@ function renderBlockToDate(){
     pdKpi("Fitness",ctl!=null?fmt(ctl,0):"–",ctl0!=null?`all-training fitness, ${fmt(ctl0,0)} after week 1`:"",ctl!=null&&ctl0!=null?(ctl>ctl0+2?["ahead","Rising"]:ctl<ctl0-2?["behind","Falling"]:["on","Flat"]):null)+
     pdKpi("HRV",h?fmt(h.last,0):"–",h?`week 1 ${fmt(h.first,0)} · block avg ${fmt(h.avg,0)}`:"",h?[h.tr.cls,h.tr.w]:null)+
     pdKpi("Bodyweight",bw?`${fmt(bw.last,1)} kg`:"–",bw?`week 1 ${fmt(bw.first,1)} kg`:"",null);
-  $("bk-rows").innerHTML=rows.map(r=>{const u=x=>x==null?"–":fv(r.m,x)+unitOf(r.m,x);return `<tr><td class="metric">${r.m.label}<small>${r.m.sub}</small></td><td>${u(r.first)}${repTxt(r.m,r.firstI)}</td><td>${u(r.avg)}</td><td>${u(r.l3)}</td><td>${u(r.last)}${repTxt(r.m,r.lastI)}</td><td><span class="pill ${r.tr.cls}">${r.tr.w}</span></td><td><span class="pill ${r.cmp.cls}">${r.cmp.w}</span></td></tr>`;}).join("");
+  $("bk-rows").innerHTML=rows.map(r=>{const u=x=>x==null?"–":fv(r.m,x)+unitOf(r.m,x);return `<tr><td class="metric">${r.m.label}<small>${r.m.sub}</small></td><td>${u(r.first)}${repTxt(r.m,r.firstI)}</td><td>${u(r.avg)}</td><td>${u(r.l3)}</td><td>${u(r.lw)}${r.lw!=null?repTxt(r.m,r.lwI):""}</td><td><span class="pill ${r.tr.cls}">${r.tr.w}</span></td><td><span class="pill ${r.cmp.cls}">${r.cmp.w}</span></td></tr>`;}).join("");
   drawLoadBars($("bk-chart"),L.byWeek,cur);
 }
 function drawLoadBars(el,by,cur){const T=state.targets;const W=Math.max(260,el.clientWidth),H=el.clientHeight||200,pl=36,pr=8,pt=10,pb=24;
@@ -1718,6 +1719,13 @@ function planOf(d){const P=planFor(d);let n=P.n,it=P.items||[],src="plan";
   if(td.date===d&&td.plan){n=td.plan;if(Array.isArray(td.items)&&td.items.length)it=td.items;src="todoist";}
   if(tm.date===d&&tm.session&&(!wp||(tm.writtenAt&&WP.writtenAt&&tm.writtenAt>WP.writtenAt))){n=tm.session;if(Array.isArray(tm.items)&&tm.items.length)it=tm.items;src="todoist";}
   return {n,items:it,src,rest:/^rest/i.test(n)};}
+// Todoist targets win on This week (James, 16 Nov): a lift is scored against that day's Todoist target when there is one; the plan doc still drives the Block tab
+const TD_RX={bench:/bench/i,inclineDb:/incline/i,dbShoulder:/shoulder press/i,hipThrust:/hip thrust/i,legCurl:/leg curl/i,legExt:/leg ext/i,dbRow:/\brow\b/i,wpu:/weighted pull/i};
+function tdParse(s){s=String(s||"");let m=s.match(/(\d+)\s*[×x]\s*(\d+)(?:\s*[–-]\s*\d+)?\s*@\s*\+?(\d+(?:\.\d+)?)\s*kg/);if(m)return{kg:+m[3],reps:+m[2]};m=s.match(/^\s*\+?(\d+(?:\.\d+)?)\s*[×x]\s*(\d+)/);if(m)return{kg:+m[1],reps:+m[2]};return null;}
+function tdTarget(key,d){const rx=TD_RX[key];if(!rx||!d)return null;const P=planOf(d);if(P.src!=="todoist")return null;const it=(P.items||[]).find(r=>r&&rx.test(r[0])&&!(key==="bench"&&/incline/i.test(r[0])));if(!it)return null;const p=tdParse(it[1]);if(!p)return null;
+  return {kg:p.kg,reps:p.reps,t:key==="wpu"?p.kg:e1(p.kg,p.reps),lab:`${key==="wpu"?"+":""}${fmt(p.kg,p.kg%1?1:0)} × ${p.reps}`};}
+function tdStatus(m,v,reps,T){if(v==null)return "na";if(m.key==="wpu"){if(v>T.kg)return "ahead";if(v<T.kg)return "behind";return reps==null||reps===T.reps?"on":reps>T.reps?"ahead":"behind";}const tol=Math.abs(T.t)*(m.tolRel||0.03);return v>T.t+tol?"ahead":v>=T.t-tol?"on":"behind";}
+function liftDayIn(key,a){let d=null;const rx=LIFT_RX[key];if(!rx)return null;for(let k=0;k<7;k++){const dd=isoD(a+k*DAY);const lf=(state.lifts||{})[dd];if(lf&&lf.exercises&&Object.keys(lf.exercises).some(x=>rx.test(x)))d=dd;}return d;}
 function renderWeekDays(){const el=$("wk-dcards");if(!el)return;
   const cur=currentWeekIdx(),a=dateOfIdx(cur),n0=new Date(),today=Date.UTC(n0.getFullYear(),n0.getMonth(),n0.getDate());
   const L=pdLoads();const W=(activeWeeks()||{})[isoD(a)]||{};const S={};METRICS.forEach(m=>S[m.key]=series(m,activeWeeks()));
@@ -1737,7 +1745,7 @@ function renderWeekDays(){const el=$("wk-dcards");if(!el)return;
       const KO={lift:0,ride:1,other:2};const what=rs.slice().sort((x,y)=>(KO[x.kind]??3)-(KO[y.kind]??3)).map(r=>r.kind==="ride"?`${r.name}${r.km?" "+fmt(r.km,1)+" km":""}${r.dur&&r.dur!=="–"?" · "+r.dur:""}`:r.name).join(" + ");
       const lf=(state.lifts||{})[d];const exs=lf&&lf.exercises?Object.keys(lf.exercises):[];const res=[];
       Object.keys(LIFT_RX).forEach(key=>{if(!exs.some(x=>LIFT_RX[key].test(x)))return;const m=METRICS.find(x=>x.key===key);const v=W[key];if(!m||v==null)return;
-        const st=status0(m,S[key],cur);const tg=S[key].target[cur];const lb=S[key].label[cur];
+        const TT=tdTarget(key,d);const st=TT?tdStatus(m,v,W.wpuReps,TT):status0(m,S[key],cur);const tg=TT?(key==="wpu"?null:TT.t):S[key].target[cur];const lb=TT?TT.lab:S[key].label[cur];
         const done=key==="wpu"?`${fv(m,v)}${W.wpuReps?" × "+W.wpuReps:""}`:`${fv(m,v)} kg`;
         const plan=key==="wpu"?(lb||"–"):(tg!=null?`${fv(m,tg)} kg`:(lb||"–"));
         res.push({m,st,done,plan});});
@@ -1778,11 +1786,12 @@ function renderTrends(){const g=$("trend-grid");if(!g)return;const weeks=activeW
 {const _rb=renderBlockToDate;renderBlockToDate=function(){_rb();try{renderTrends();}catch(e){console.error(e);}};}
 const LOG_TAG={lift:"Lift",ride:"Ride",other:"Other"};
 function renderLog(){const el=$("lg-list");if(!el)return;const {rows}=wholeModel();
+  const nl=ridesList().filter(r=>!rideLoad(r,state.status)).map(r=>({d:String(r.date).slice(0,10),kind:"ride",km:r.distanceKm,name:r.commute?"Commute ride":r.indoor?"Indoor ride":"Outdoor ride",dur:r.movingMin?r.movingMin+" min":"–",detail:"no heart rate or power",load:null}));
   const ex=Object.keys(state.extra||{}).map(k=>state.extra[k]).filter(x=>x&&x.date).map(x=>({d:String(x.date).slice(0,10),kind:"extra",name:x.name||"Session",dur:x.min?x.min+" min":"–",detail:x.note||"",load:null,tag:x.kind||"Extra"}));
-  const all=rows.map(r=>Object.assign({},r,{tag:r.kind==="other"?String(r.name||"Other").split(/[ ,]/)[0]:(LOG_TAG[r.kind]||"Other")})).concat(ex).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+  const all=rows.concat(nl).map(r=>Object.assign({},r,{tag:r.kind==="other"?String(r.name||"Other").split(/[ ,]/)[0]:(LOG_TAG[r.kind]||"Other")})).concat(ex).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
   const byW={};all.forEach(r=>{const i=wkIdxOfDate(r.d);(byW[i]=byW[i]||[]).push(r);});
   const cur=currentWeekIdx();const ks=Object.keys(byW).map(Number).sort((a,b)=>b-a);
-  el.innerHTML=ks.map(i=>{const rs=byW[i];const a=dateOfIdx(i);const n=new Set(rs.filter(r=>r.kind!=="extra"&&r.kind!=="other").map(r=>r.d)).size;
+  el.innerHTML=ks.map(i=>{const rs=byW[i];const a=dateOfIdx(i);const W0=(state.weeks||{})[isoD(a)]||{};const n=W0.sessions!=null?W0.sessions:new Set(rs.filter(r=>r.kind!=="extra"&&r.kind!=="other"&&r.name!=="Commute ride"&&r.load!=null).map(r=>r.d)).size;
     return `<details class="lg-wk"${i===cur||i===cur-1?" open":""}><summary><span><b>Week ${i+1}</b> · ${fmtD(a)} – ${fmtD(a+6*DAY)}</span><span class="mute">${rs.length} logged · ${n} training day${n===1?"":"s"}</span></summary>${rs.map(r=>`<div class="lg-row"><span class="ld">${new Date(Date.parse(r.d+"T00:00:00Z")).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",timeZone:"UTC"})}</span><span class="ln">${escapeHtml(r.name)}${r.kind==="ride"&&r.km?" · "+fmt(r.km,1)+" km":""}</span><span class="lg-tag t-${escapeHtml(String(r.kind))}">${escapeHtml(r.tag)}</span><span class="lm">${[r.dur&&r.dur!=="–"?r.dur:"",r.detail&&r.detail!=="–"?r.detail:"",r.load!=null?fmt(r.load,0)+" pts":""].filter(Boolean).map(escapeHtml).join(" · ")}</span></div>`).join("")}</details>`;}).join("")||`<p class="note">Nothing logged yet.</p>`;}
 {const _rp=renderPeriods;renderPeriods=function(){_rp();try{if(!$("page-log").hidden)renderLog();if(!$("page-next").hidden)renderNext();if(!$("page-week").hidden)renderWeekDays();}catch(e){console.error(e);}};}
 
