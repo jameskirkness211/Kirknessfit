@@ -97,6 +97,12 @@ section{display:flex;flex-direction:column;gap:14px}
 .tm-prep{margin:0;padding-left:18px;line-height:1.55}.tm-prep li{margin:2px 0}
 #tm-when:empty,#tm-rehab:empty,#tm-src:empty{display:none}
 .td-ready .pill{font-size:15px}
+.rs-top{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.rs-num{font-family:var(--display);font-size:56px;font-weight:700;line-height:1}
+.rs-of{font-size:15px;color:var(--muted);margin-right:8px}
+.rs-tbl td:first-child{width:58%}
+.rs-tbl tr.low td{color:var(--bad-ink)}
+.rs-tbl .w{color:var(--muted);font-size:12px}
 #page-overview,#page-cycling,#page-status,#page-week,#page-block,#page-zones,#page-targets{display:flex;flex-direction:column;gap:28px}
 .sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
 .sec-head span{color:var(--muted);font-size:13px}
@@ -531,7 +537,8 @@ details.lg-wk>summary::-webkit-details-marker{display:none}
     <div class="sec-head"><h2 id="td-title">Today</h2><span id="td-sub"></span></div>
     <div class="today-grid">
       <div class="card td-plan"><span class="eyebrow">Planned session</span><h3 id="td-session"></h3><table class="td-tbl"><tbody id="td-items"></tbody></table><p class="card-sub" id="td-planNote"></p></div>
-      <div class="card"><span class="eyebrow">Readiness</span><div class="td-ready"><span class="pill" id="td-pill"></span></div><p id="td-readyWhy" class="card-sub"></p><p id="td-readyNote"></p></div>
+      <div class="card"><span class="eyebrow">Readiness</span><div class="rs-top"><span class="rs-num num" id="rs-num">–</span><span class="rs-of">/100</span><span class="td-ready"><span class="pill" id="td-pill"></span></span></div><p id="td-readyWhy" class="card-sub"></p><table class="td-tbl rs-tbl"><tbody id="rs-parts"></tbody></table><p id="td-readyNote"></p></div>
+      <div class="card" id="sl-card"><span class="eyebrow">Last night's sleep</span><div class="rs-top"><span class="rs-num num" id="sl-num">–</span><span class="rs-of">/100</span><span class="pill" id="sl-pill" hidden></span></div><p class="card-sub" id="sl-sub"></p><table class="td-tbl"><tbody id="sl-rows"></tbody></table></div>
       <div class="card td-note"><span class="eyebrow">Recommendation</span><p id="td-rec"></p></div>
       <div class="card td-note"><div class="tip-head"><span class="eyebrow">Tip of the day</span><button type="button" class="pin-btn" id="td-pin" hidden aria-pressed="false">Pin</button></div><p id="td-tip"></p></div>
     </div>
@@ -585,7 +592,8 @@ details.lg-wk>summary::-webkit-details-marker{display:none}
         <p class="note"><b>Power, not heart rate.</b> Each ride's load comes from Normalized Power against your FTP, so a session where tired legs capped your heart rate still counts the work you actually did.</p>
         <p class="note"><b>Separate indoor FTP.</b> Your rides so far show noticeably less power indoors at the same heart rate, so indoor rides are scored against indoor FTP (outdoor FTP × the indoor factor).</p>
         <p class="note"><b>Leg work counts, from your Hevy sets.</b> Each working set of a leg exercise scores (RPE − 5) points: an RPE 8 set is 3, an RPE 10 set is 5, warm-ups score nothing. Compound lifts (leg press, split squat, step-up, RDL, lunge) count in full; leg extension, leg curl, back extension and calf raise count half. A set with no RPE is scored as 7.5. Upper-body days don't count, because they barely touch your riding legs. Until Sunday's upload brings the week's Hevy data, Tuesday uses the fixed estimate in Settings.</p>
-        <p class="note"><b>Whole body vs cycling.</b> The top half counts everything: every Hevy set scores (RPE − 5) points, big lifts in full and isolation and core work at half, plus rides by power and walks, swims and yoga by heart rate. Readiness compares this morning's HRV and resting heart rate with your own last four weeks, and adds sleep score. The cycling half below only counts riding and legs, for deciding how hard to ride.</p>
+        <p class="note"><b>Whole body vs cycling.</b> The top half counts everything: every Hevy set scores (RPE − 5) points, big lifts in full and isolation and core work at half, plus rides by power and walks, swims and yoga by heart rate. The cycling half below only counts riding and legs, for deciding how hard to ride.</p>
+        <p class="note"><b>Readiness score (0–100).</b> Last night's sleep score 35%; HRV against your own 4-week median 25% (70 points at your median, ±3 per ms); resting HR against your 4-week median 15% (70 at your median, −6 per beat above); sleep debt 10% (last 3 nights' mean hours against 7 h); training load 15% (last 3 days' average daily load against your 4-week average: 90 points when it's light, 70 at 1.3×, falling fast above that). HRV under 35 caps the score at 54. Bands: 75+ go hard, 55–74 train as planned, 40–54 keep it easy, under 40 rest or rehab. The weights are a first version, to be checked against how sessions actually go.</p>
         <p class="note"><b>Fallback.</b> Rides without power are scored from heart rate against your threshold heart rate.</p>
         <p class="note"><b>Calibrating.</b> Fitness and fatigue start from the seed value on 21 Sep and firm up after about 6 weeks of data. Retest FTP on fresh legs and update Settings when you do. Rides appear the morning after, from the daily pull.</p>
       </div>
@@ -1759,6 +1767,53 @@ function renderWeekDays(){const el=$("wk-dcards");if(!el)return;
   el.innerHTML=h;}
 {const _rw=renderWeekToDate;renderWeekToDate=function(){_rw();try{renderWeekDays();}catch(e){console.error(e);}};}
 {const _rt=renderToday;renderToday=function(){_rt();try{const why=$("td-readyWhy").textContent||"";const n=$("td-readyNote");const t=fmtD(Date.parse(todayISO()+"T00:00:00Z"));if(why.indexOf("From "+t)===0&&/hadn.t synced|not synced|numbers are missing|no fresh recovery/i.test(n.textContent||""))n.textContent="";}catch(e){}};}
+/* ---------- readiness score + last night's sleep (26 Nov) ---------- */
+// Own sleep score (Fitbit hours + Garmin HRV/RHR) starts 23 Nov; older scores are Garmin's, so sleep comparisons only use nights from then.
+const SCORE_FROM="2026-11-23";
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function readinessScore(){
+  const D=state.daily||{};const days=Object.keys(D).sort();const today=todayISO();
+  const cur=[...days].reverse().find(d=>d<=today&&(D[d].hrv!=null||D[d].sleepScore!=null));if(!cur)return null;
+  const x=D[cur],t=Date.parse(cur+"T00:00:00Z"),dOff=k=>isoU(t-k*SDAY);
+  const prior=days.filter(d=>d<cur&&Date.parse(d+"T00:00:00Z")>=t-28*SDAY);
+  const afterDrink=d=>((D[isoU(Date.parse(d+"T00:00:00Z")-SDAY)]||{}).alcUnits||0)>0;
+  const hv=prior.filter(d=>!afterDrink(d)).map(d=>D[d].hrv).filter(v=>v!=null),rv=prior.map(d=>D[d].rhr).filter(v=>v!=null);
+  const hb=hv.length>=7?median(hv):47,rb=rv.length>=7?median(rv):57;
+  const parts=[];
+  if(x.sleepScore!=null)parts.push({k:"sleep",lab:"Sleep score",det:fmt(x.sleepScore,0),w:35,p:clamp(x.sleepScore,0,100)});
+  if(x.hrv!=null)parts.push({k:"hrv",lab:"HRV v your median",det:`${fmt(x.hrv,0)} v ${fmt(hb,0)} ms`,w:25,p:clamp(70+3*(x.hrv-hb),0,100)});
+  if(x.rhr!=null)parts.push({k:"rhr",lab:"Resting HR v your median",det:`${fmt(x.rhr,0)} v ${fmt(rb,0)}`,w:15,p:clamp(70-6*(x.rhr-rb),0,100)});
+  const sh=[0,1,2].map(k=>(D[dOff(k)]||{}).sleepH).filter(v=>v!=null);
+  if(sh.length){const m=sh.reduce((a,b)=>a+b,0)/sh.length;parts.push({k:"debt",lab:`Sleep, last ${sh.length} night${sh.length===1?"":"s"}`,det:`${fmt(m,1)} h a night`,w:10,p:clamp(m/7*100,0,100)});}
+  try{const s=wholeModel().s;const L=d=>{const e=s.find(z=>z.d===d);return e?e.load:0;};
+    const ac=[1,2,3].reduce((a,k)=>a+L(dOff(k)),0)/3,ch=Array.from({length:28},(_,k)=>L(dOff(k+1))).reduce((a,b)=>a+b,0)/28;
+    if(ch>0){const r=ac/ch;const p=r<=0.8?90:r<=1.3?90-(r-0.8)*40:Math.max(10,70-(r-1.3)*100);parts.push({k:"load",lab:"Training load, last 3 days",det:`${fmt(r,1)}× your usual`,w:15,p});}}catch(e){}
+  if(!parts.length)return null;
+  const wt=parts.reduce((a,q)=>a+q.w,0);let score=Math.round(parts.reduce((a,q)=>a+q.w*q.p,0)/wt);const raw=score;const caps=[];
+  if(x.hrv!=null&&x.hrv<35&&score>54){score=54;caps.push("HRV under 35");}
+  if(afterDrink(cur)&&score>54){score=54;caps.push("the morning after a drinking day");}
+  const band=score>=75?["ahead","Go hard"]:score>=55?["on","Train as planned"]:score>=40?["over","Keep it easy"]:["behind","Rest or rehab"];
+  const low=parts.slice().sort((a,b)=>a.p-b.p)[0];
+  return{cur,score,raw,caps,band,parts,low,full:wt===100};}
+function sleepCard(){const D=state.daily||{};const days=Object.keys(D).sort();const today=todayISO();
+  const cur=[...days].reverse().find(d=>d<=today&&D[d].sleepScore!=null);const card=$("sl-card");if(!card)return;
+  if(!cur){$("sl-num").textContent="–";$("sl-sub").textContent="Arrives with the morning pull.";$("sl-rows").innerHTML="";return;}
+  const x=D[cur];const prev=days.filter(d=>d<cur&&d>=SCORE_FROM&&Date.parse(d+"T00:00:00Z")>=Date.parse(cur+"T00:00:00Z")-7*SDAY&&D[d].sleepScore!=null).map(d=>D[d]);
+  const avg=k=>{const v=prev.map(p=>p[k]).filter(v=>v!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+  $("sl-num").textContent=fmt(x.sleepScore,0);
+  const pl=$("sl-pill");const sc=x.sleepScore;pl.hidden=false;pl.className="pill "+(sc>=75?"ahead":sc>=60?"on":sc>=45?"over":"behind");pl.textContent=sc>=75?"Good":sc>=60?"Fair":sc>=45?"Short":"Poor";
+  const old=cur===today?"":` · from ${fmtD(Date.parse(cur+"T00:00:00Z"))}, today's hasn't synced yet`;
+  $("sl-sub").textContent=`${x.sleepSrc==="garmin"?"Hours from the watch (no strap data that night)":"Hours from the strap"}; HRV and resting HR from the watch${old}`;
+  const sa=avg("sleepScore"),ha=avg("sleepH");const dl=(v,a,dp,u)=>a==null||v==null?"":` <span class="w">(${v-a>=0?"+":"−"}${fmt(Math.abs(v-a),dp)}${u} v ${prev.length}-night avg)</span>`;
+  $("sl-rows").innerHTML=[["Score",`${fmt(sc,0)}${dl(sc,sa,0,"")}`],["Asleep",x.sleepH!=null?`${fmt(x.sleepH,1)} h${dl(x.sleepH,ha,1," h")}`:"–"],["HRV",x.hrv!=null?`${fmt(x.hrv,0)} ms`:"–"],["Resting HR",x.rhr!=null?`${fmt(x.rhr,0)} bpm`:"–"]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");}
+{const _rt2=renderToday;renderToday=function(){_rt2();try{
+  const R=readinessScore();
+  if(R){$("rs-num").textContent=R.score;$("td-pill").className="pill "+R.band[0];$("td-pill").textContent=R.band[1];
+    $("td-readyWhy").textContent=`From ${fmtD(Date.parse(R.cur+"T00:00:00Z"))}`+(R.caps.length?` · ${R.raw} before the cap: ${R.caps.join(" and ")} caps it at 54`:` · weakest part: ${R.low.lab.toLowerCase()}`)+(R.full?"":" · some parts missing, scored on the rest");
+    $("rs-parts").innerHTML=R.parts.map(q=>`<tr${q===R.low&&q.p<60?' class="low"':""}><td>${escapeHtml(q.lab)} <span class="w">${q.w}%</span><br><span class="w">${escapeHtml(q.det)}</span></td><td>${fmt(q.p,0)}</td></tr>`).join("");}
+  else{$("rs-num").textContent="–";$("rs-parts").innerHTML="";}
+  sleepCard();}catch(e){console.error(e);}};}
+{const rc=$("td-pill").closest(".card"),sc=$("sl-card");if(rc&&sc)rc.after(sc);}
 
 function renderNext(){const el=$("nx-days");if(!el)return;const T=state.targets;const ni=currentWeekIdx()+1;
   if(ni>=T.blockWeeks){$("nx-title").textContent="After the block";$("nx-src").textContent="";$("nx-head").textContent="The block ends on Sun 20 Dec. The Christmas bridge and the next block get planned at the block-close review.";$("nx-kpis").innerHTML="";el.innerHTML="";return;}
